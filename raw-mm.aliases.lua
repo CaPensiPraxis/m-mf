@@ -26,7 +26,7 @@ function togglesip(what)
         min = v
       end
     end
-    if what == "health"  then 
+    if what == "health"  then
       if mp > ep then
         hp, mp, ep = max, mid, min
       else
@@ -458,13 +458,57 @@ function ashow()
   echoLink("steam", 'mm.printorder("steam")', 'View steam priorities', true)
   setUnderline(false) echo", " setUnderline(true)
   echoLink("wafer", 'mm.printorder("wafer")', 'View wafer priorities', true)
+  setUnderline(false) echo", " setUnderline(true)
+  echoLink("ice", 'mm.printorder("ice")', 'View ice priorities', true)
   resetFormat()
   echo"\n"
 
+  echofn("Arena mode:       ")
+  setFgColor(unpack(getDefaultColorNums))
+  setUnderline(true)
+  echoLink(conf.arena and "enabled" or "disabled", "$(sys).tntf_set('arena', "..(conf.arena and "false" or "true").. ', false); $(sys).ashow()', (conf.arena and "Disable" or "Enable")..' arena triggers', true)
+
+  echo"\n"
   if conf.paused then
     echof("System is currently paused.") end
   raiseEvent("m&m onshow")
   showprompt()
+end
+
+function showfocus()
+  echofn("Focusing Under Aeon:       ")
+  setFgColor(unpack(getDefaultColorNums))
+  setUnderline(true)
+  echoLink(conf.aeonfocus and "enabled" or "disabled", "$(sys).tntf_set('aeonfocus', "..(conf.aeonfocus and "false" or "true").. ', false); $(sys).showfocus()', (conf.aeonfocus and "Disable" or "Enable")..' focusing in aeon', true)
+  resetFormat()
+  echo"\n"
+
+  echofn("Using Beast Focus:         ")
+  setFgColor(unpack(getDefaultColorNums))
+  setUnderline(true)
+  echoLink(conf.beastfocus and "enabled" or "disabled", "$(sys).tntf_set('beastfocus', "..(conf.beastfocus and "false" or "true").. ', false); $(sys).showfocus()', (conf.beastfocus and "Disable" or "Enable")..' using beast to focus when possible', true)
+  resetFormat()
+  echo"\n"
+
+  echofn("Using Power Focus:         ")
+  setFgColor(unpack(getDefaultColorNums))
+  setUnderline(true)
+  echoLink(conf.powerfocus and "enabled" or "disabled", "$(sys).tntf_set('powerfocus', "..(conf.powerfocus and "false" or "true").. ', false); $(sys).showfocus()', (conf.powerfocus and "Disable" or "Enable")..' using power to focus when possible', true)
+  resetFormat()
+  echo"\n"
+
+  if next(mm.me.focus) then
+    local t = {}
+    for aff, val in pairs(mm.me.focus) do
+      t[#t+1] = aff
+    end
+    local str = "Currently focusing: "
+    str = str + table.concat(t, ", ")
+    echofn(str)
+  else
+    echofn("Currently not focusing any afflictions.")
+  end
+  echo"\n"
 end
 
 
@@ -474,7 +518,7 @@ function showaffs()
 end
 
 
-function app(what)
+function app(what, quiet)
   assert(what == nil or what == "on" or what == "off" or type(what) == "boolean", "mm.app wants 'on' or 'off' as an argument")
 
   if what == "on" or what == true or (what == nil and not conf.paused) then
@@ -483,7 +527,7 @@ function app(what)
     conf.paused = false
   end
 
-  echof("System " .. (conf.paused and "paused" or "unpaused") .. ".")
+  if not quiet then echof("System " .. (conf.paused and "paused" or "unpaused") .. ".") end
   raiseEvent("m&m config changed", "paused")
   showprompt()
 
@@ -717,6 +761,10 @@ function aignore(action, balance)
   showprompt()
 end
 
+signals.systemstart:connect(function ()
+  winningTrigger = tempExactMatchTrigger([["WINNING!" you scream, pumping a fist in the air like an idiot.]], [[mm.valid.winning1()]])
+end)
+
 function show_ignore()
   echof("Things we're ignoring:%s", not next(ignore) and " (none)" or '')
 
@@ -752,3 +800,4 @@ function show_ignore()
   end
   showprompt()
 end
+

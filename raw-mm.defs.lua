@@ -145,12 +145,73 @@ defs_data = phpTable({
   },
   alacrity = { nodef = true,
     def = "You are surrounded by a field of alacrity."},
-  curiohp = { nodef = true,
-    def = "You have a curio health blessing."},
-  curiomp = { nodef = true,
-    def = "You have a curio mana blessing."},
-  curioeg = { nodef = true,
-    def = "You have a curio ego blessing."},
+  redgenies = { type = "artifact",
+    on = {"Four genies burst out of their bottles, whirling around you as they wrap you in ribbons of multicoloured light. Your health swells as the blessing of the genies settle around you.", "You already have a curio health blessing!"},
+    def = "You have a curio health blessing.",
+    tooltip = "Add a 1/8 boost to health"},
+  bluegenies = { type = "artifact",
+    on = {"Four genies burst out of their bottles, whirling around you as they wrap you in ribbons of multicoloured light. Your mana swells as the blessing of the genies settle around you.", "You already have a curio mana blessing!"},
+    def = "You have a curio mana blessing.",
+    tooltip = "Adds a 1/8 boost to mana"},
+  yellowgenies = { type = "artifact",
+    on = {"Four genies burst out of their bottles, whirling around you as they wrap you in ribbons of multicoloured light. Your ego swells as the blessing of the genies settle around you.", "You already have a curio ego blessing!"},
+    def = "You have a curio ego blessing.",
+    tooltip = "Adds a 1/8 boost to ego"},
+  catsluck = { type = "artifact",
+    on = {"You are now protected by the catsluck defence.","You feel an aura of luck surround you."},
+    def = "Cat's Luck (catsluck) (indefinite).",
+    tooltip = "boosts critical hits",
+    },
+  mint = { type = "artifact",
+    on = "You are now protected by the mint defence.",
+    off = "Your mint defence has expired.",
+    defr = [[^Mint Candy \(mint\) \(\d+ minutes\)\.]],
+    tooltip = "provides 10% ego boost during influencing, last 1 hour."},
+  gumball = { type = "artifact",
+    on = "You are now protected by the gumball defence.",
+    off = "Your gumball defence has expired.",
+    defr = [[^Gumball Candy \(gumball\) \(\d+ minutes\)\.]],
+    tooltip = "provides 10% chance of forming a shield during bashing, last 1 hour."},
+  fireball = { type = "artifact",
+    on = "You are now protected by the fireball defence.",
+    off = "Your fireball defence has expired.",
+    defr = [[^Fireball Candy \(fireball\) \(\d+ minutes\)\.]],
+    tooltip = "provides 10% chance of releasing firebreath attack during bashing, last 1 hour."},
+  rockcandy = { type = "artifact",
+    on = "You are now protected by the rockcandy defence.",
+    off = "Your rockcandy defence has expired.",
+    defr = [[^Rock Candy \(rockcandy\) \(\d+ minutes\)\.]],
+    tooltip = "gives moderate rooting bonus, last 1 hour."},
+  licorice = { type = "artifact",
+    on = "You are now protected by the licorice defence.",
+    off = "Your licorice defence has expired.",
+    defr = [[^Licorice Candy \(licorice\) \(\d+ minutes\)\.]],
+    tooltip = "provides 3/13 health buff, last 1 hour."},
+  jellybaby = { type = "artifact",
+    on = "You are now protected by the jellybaby defence.",
+    off = "Your jellybaby defence has expired.",
+    defr = [[^Jelly Baby Candy \(jellybaby\) \(\d+ minutes\)\.]],
+    tooltip = "provides 3/13 mana buff, last 1 hour."},
+  creamchew = { type = "artifact",
+    on = "You are now protected by the creamchew defence.",
+    off = "Your creamchew defence has expired.",
+    defr = [[^Cream Chew Candy \(creamchew\) \(\d+ minutes\)\.]],
+    tooltip = "provides 3/13 ego buff, last 1 hour."},
+  waxlips = { type = "artifact",
+    on = "You are now protected by the waxlips defence.",
+    off = "Your waxlips defence has expired.",
+    defr = [[^Wax Lips Candy \(waxlips\) \(\d+ minutes\)\.]],
+    tooltip = "provides 25% xp bonus, last 1 hour."},
+  redlollipop = { type = "artifact",
+    on = "You are now protected by the redlollipop defence.",
+    off = "Your redlollipop defence has expired.",
+    defr = [[^Red Lollipop Candy \(redlollipop\) \(\d+ minutes\)\.]],
+    tooltip = "provides 5/5 balance buff, lasts 1 minute."},
+  bluelollipop = { type = "artifact",
+    on = "You are now protected by the bluelollipop defence.",
+    off = "Your bluelollipop defence has expired.",
+    defr = [[^Blue Lollipop Candy \(bluelollipop\) \(\d+ minutes\)\.]],
+    tooltip = "provides 5/5 equilibrium buff, lasts 1 minute."},
   faerie = { nodef = true,
     def = "You are wearing a pair of faerie wings."},
   gravity = { nodef = true,
@@ -219,7 +280,32 @@ defs_data = phpTable({
     ondef = function () return "("..matches[2]..")" end,
   },
   ["cement socks"] = { nodef = true,
-    def = "You are wearing cement socks, giving you great summon resistance."
+    def = "You are wearing cement socks, giving you great summon resistance.",
+    tooltip = "adds rooting at the cost of celerity"
+  },
+  anamnesis = {nodef = true,
+    defr = [[^You are recalling your past life as an? (\w+)\.$]],
+    ondef = function () return "("..matches[2]..")" end,
+  },
+  wondermask = {nodef = true,
+    defr = [[^You are wearing a Wonder Mask with a (\w+) face\.$]],
+    ondef = function () return "("..matches[2]:lower()..")" end,
+    },
+  haircurio = {nodef = true,
+    def = "Your influencing is buffed by hair! Glorious hair!"
+  },
+  gestalt = { nodef = true,
+    defr = [[^You have a \w+ gestalt composed of \w+ ikons\.$]]
+  },
+  ["poteen xp"] = { nodef = true,
+    defr = [[^You burped up increased experience gain for \d+ minutes\.$]]
+  },
+  ["poteen karma"] = { nodef = true,
+    defr = [[^You burped up increased karma gain for \d+ minutes\.$]]
+  },
+  ["poteen mana"] = { nodef = true,
+    defr = [[^You burped up increased mana for \d+ minutes\.$]],
+    tooltip = "Adds a 1/8 mana bonus",
   },
   healaura = { nodef = true,
     ondef = function () return "("..matches[2]..")" end,
@@ -248,9 +334,20 @@ defs_data = phpTable({
     ondef = function () return string.format("(%d %s%s)", matches[2], matches[3], (matches[4] and ", "..matches[4].." "..matches[5] or '')) end,
   },
   curioatk = { nodef = true,
-    defr = [[^You are using a curio for (\d+) (\w+) damage enhancement\.$]],
-    ondef = function () return string.format("(%d %s)", matches[2], matches[3]) end,
+    defr = {[[^You are using a curio for (\d+) (\w+) damage enhancement\.$]],
+            [[^You are using a curio for 1 (\w+) \& 1 (\w+) damage enhancement\.$]]},
+    ondef = function ()
+      if tonumber(matches[2]) then
+        return string.format("(%d %s)", matches[2], matches[3])
+      else
+        return string.format("(%s/%s)", matches[2], matches[3])
+      end
+    end,
   },
+  curiofood = { nodef = true,
+    defr = [[^You will receive a Level (\d+) Critical Hit Bonus \(Blessed Food\)\.$]],
+    ondef = function () return string.format("(%d)",matches[2]) end,
+    },
   wigcurio = { nodef = true,
     def = "Your influencing is buffed by hair! Glorious hair!."
   },
@@ -268,10 +365,42 @@ defs_data = phpTable({
   decease = { nodef = true,
     def = "You have incredibly thickened skin.",
     tooltip = "+35 physical DMP"},
-  hardsmoke = { type = "general",
-    on = {"The smoke settles around you in a haze, strangely weighing your body down.", "The smoke settles around you, but your body is already weighed down."}},
-  smokeweb = { type = "general",
-    on = "The smoke wafts across the ground, spreading to fill the area around you with a nigh-imperceptible haze."},
+  wondercornbal = { type = "artifact",
+    on = {"Your balance is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your balance has been enhanced through fine food.",
+    tooltip = "Adds 1/3 boost to balance, doesn't stack with herofete"},
+  wondercornhp = { type = "artifact",
+    on = {"Your health is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your health has been enhanced through fine food.",
+    tooltip = "adds 1/5 boost to health, doesn't stack with herofete"},
+  wondercornmp = { type = "artifact",
+    on = {"Your mana is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your mana has been enhanced through fine food.",
+    tooltip = "adds 1/5 boost to mana, doesn't stack with herofete"},
+  wondercornego = { type = "artifact",
+    on = {"Your ego is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your ego has been enhanced through fine food.",
+    tooltip = "adds 1/5 boost to ego, doesn't stack with herofete"},
+  wondercornres = { type = "artifact",
+    on = {"Your resistance is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your resistance has been enhanced through fine food.",
+    tooltip = "adds 1/3 boost to resistance, doesn't stack with herofete"},
+  wondercorndam = { type = "artifact",
+    on = {"Your damage is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your damage has been enhanced through fine food.",
+    tooltip = "adds 1/3 boost to damage, doesn't stack with herofete"},
+  wondercorneq = { type = "artifact",
+    on = {"Your equilibrium is enhanced by the fine food.", "You feel completely enhanced by the fine food."},
+    def = "Your equilibrium has been enhanced through fine food.",
+    tooltip = "adds 1/3 boost to equilibrium, doesn't stack with herofete"},
+  hardsmoke = { type = "artifact",
+    on = {"The smoke settles around you in a haze, strangely weighing your body down.", "The smoke settles around you, but your body is already weighed down."},
+    def = "Hardsmoke (hardsmoke) (indefinite).",
+    defr = [[^Hardsmoke \(hardsmoke\) \(\d+ minutes\)\.$]]},
+  smokeweb = { type = "artifact",
+    on = "The smoke wafts across the ground, spreading to fill the area around you with a nigh-imperceptible haze.",
+    def = "Smokeweb (smokeweb) (indefinite).",
+    defr = [[^Smokeweb \(smokeweb\) \(\d+ minutes\)\.$]]},
   charismaticaura = { type = "general",
     def = "You are compellingly charismatic.",
     mana = "lots",
@@ -286,6 +415,7 @@ defs_data = phpTable({
   },
   fire = { type = "general",
     onr = [[^\w+ closes (?:his|her) eyes for a moment and turns towards you, beseeching the sun to shine\. A shaft of warm, golden light falls over you, soothing your body\.$]],
+    on = "A feeling of comfortable warmth spreads over you.",
     def = "Your insides are warmed by a fire potion." },
   trueblind = { type = "general" },
   ["regal aura"] = { nodef = true,
@@ -305,31 +435,37 @@ defs_data = phpTable({
   rebounding = { type = "general", def = "You are protected from hand-held weapons with an aura of rebounding." },
   waterwalk = {
     type = "enchantment",
-    def = "You can walk upon water.",
+    def = "Waterwalking (waterwalk) (indefinite).",
+    defr = [[^Waterwalking \(waterwalk\) \(\d+ minutes\)\.$]],
     on = {"You are already water walking.", "You pull a cosmic web down around your feet, and you sense that gravity will be your ally when entering water."}
   },
   waterbreathing = {
     type = "enchantment",
-    on = "You briefly hold your hand over your mouth until your lips and tongue tingle.",
-    def = "You are filtering air from water for breathing.",
+    on = {"You briefly hold your hand over your mouth until your lips and tongue tingle.","You are already filtering air out of water."},
+    def = "Water Breathing (waterbreathe) (indefinite).",
+    defr = [[^Water Breathing \(waterbreathe\) \(\d+ minutes\)\.$]],
     tooltip = "Allows breathing underwater."
   },
   perfection = {
     type = "enchantment",
+    defr = [[^Perfection Enchantment \(perfection\) \(\d+ minutes\)\.$]],
     on = "A ray of golden light suddenly spotlights you.",
   },
   acquisitio = { type = "enchantment",
-    def = "You are filled with the greed of Acquisitio.",
+    def = "Ritual of Acquisitio (acquisitio) (indefinite).",
+    defr = [[^Ritual of Acquisitio \(acquisitio\) \(\d+ minutes\)\.$]],
     off = "You allow the charm of Acquisitio to leave you and are no longer gripped by an unnatural need to accumulate things.",
     on = {"You narrow your eyes and look around greedily for something to add to your hoard.", "Chanting the ritual of Acquisitio to yourself, you narrow your eyes and look around greedily for something to add to your hoard."} },
   beauty = {
     type = "enchantment",
-    def = "Your ego is regenerating by virtue of the Ray of Beauty.",
+    def = "Beauty Enchantment (beauty) (indefinite).",
+    defr = [[^Beauty Enchantment \(beauty\) \(\d+ minutes\)\.$]],
     on = "A ray of pink light suddenly spotlights you."
   },
   kingdom = {
     type = "enchantment",
-    def = "Your blood is clotting by virtue of the Ray of the Kingdom.",
+    def = "Kingdom Enchantment (kingdom) (indefinite).",
+    defr = [[^Kingdom Enchantment \(kingdom\) \(\d+ minutes\)\.$]],
     on = "A ray of green light suddenly spotlights you."
   },
   avaricehorn = {
@@ -362,15 +498,20 @@ defs_data = phpTable({
 #if not skills.cosmic then
   nimbus = {
     type = "enchantment",
-    def = "Cosmic Nimbus (cosmicnimbus).", -- system calls it nimbus, hence why brackets not recognised
-    on = {"A nimbus of glittering motes blossoms around you.", "You are already surrounded with a cosmic nimbus."}
+    def = "Cosmic Nimbus (cosmicnimbus) (indefinite).", -- system calls it nimbus, hence why brackets not recognised
+    defr = [[^Cosmic Nimbus \(cosmicnimbus\) \(\d+ minutes\)\.$]],
+    on = {"A nimbus of glittering motes blossoms around you.", "You are already surrounded with a cosmic nimbus.","You are now protected by the cosmicnimbus defence."}
   },
 #end
 #if not skills.elementalism then
   levitation = { type = "enchantment",
-    on = {"You begin to rise on a cushion of air.", "You are already walking on a small cushion of air."}},
+    on = {"You are now protected by the levitate defence.","You begin to rise on a cushion of air.", "You are already walking on a small cushion of air."},
+    def = "Levitation (levitate) (indefinite).",
+    defr = [[^Levitation \(levitate\) \(\d+ minutes\)\.$]],},
 #end
-  mercy = { type = "enchantment", on = "A ray of purple light suddenly spotlights you." },
+  mercy = { type = "enchantment", on = "A ray of purple light suddenly spotlights you.",
+    defr = [[^Mercy Enchantment \(mercy\) \(?:(indefinite|\d+ minutes)\)\.$]],
+   },
   rebounding = {
     type = "general",
     off = "Your aura of weapons rebounding disappears."
@@ -508,6 +649,27 @@ defs_data = phpTable({
   benignprophesy = { nodef = true },
   terror = { nodef = true },
   ["shadow shroud"] = { nodef = true },
+  ["mindfield arti"] = { nodef = true,
+    def = "You will discharge a psychic lash from a powerful artifact on those who scry.",
+    },
+  ["solstice resist"] = {nodef = true,
+    ondef = function () return "("..matches[2]..")" end,
+    defr = [[^Solstice Resist \(solsticeresist\) \((\d+) minutes\)\.$]],
+    tooltip = "Adds 2/6 universal resistance."},
+  ["solstice health"] = {nodef = true,
+    ondef = function () return "("..matches[2]..")" end,
+    defr = [[^Solstice Health \(solsticehealth\) \((\d+) minutes\)\.$]],
+    tooltip = "Adds 2/6 boost to health."},
+  ["solstice mana"] = {nodef = true,
+    ondef = function () return "("..matches[2]..")" end,
+    defr = [[^Solstice Mana \(solsticemana\) \((\d+) minutes\)\.$]],
+    tooltip = "Adds 2/6 boost to mana."},
+  ["solstice ego"] = { nodef = true,
+    ondef = function () return "("..matches[2]..")" end,
+    defr = [[^Solstice Ego \(solsticeego\) \((\d+) minutes\)\.$]],
+    tooltip = "Adds 2/6 boost to ego"},
+  ["masquerade"] = { nodef = true,
+    def = "You are masking your divine spark to appear mortal."},
   ["prismatic barrier"] = { nodef = true },
   ["nightsweats"] = { nodef = true }, -- ?? if skills.night, etc, enable this
   ["garb"] = { nodef = true }, -- ?? if skills.night, etc, enable this
@@ -568,6 +730,30 @@ defs_data = phpTable({
   defensive = { type = "knighthood", def = "You are fighting defensively.",
     on = "You focus your attention on the defensive fighting style.",
     off = "You focus your attention on using no specific fighting style." },
+  bleeder = { type = "knighthood",
+    def = "You are fighting with a bleeder's precision.",
+    on = "You focus your attention on the bleeder fighting style.",
+    off = "You focus your attention on using no specific fighting style."},
+  berserker = { type = "knighthood",
+    def = "You are fighting with a berserker's abandon.",
+    on = "You focus your attention on the berserker fighting style.",
+    off = "You focus your attention on using no specific fighting style."},
+  bludgeoner = { type = "knighthood",
+    def = "You are fighting with a bludgeoner's strength.",
+    on = "You focus your attention on the bludgeoner fighting style.",
+    off = "You focus your attention on using no specific fighting style."},
+  pulverizer = { type = "knighthood",
+    def = "You are fighting with a pulverizers's brutality.",
+    on = "You focus your attention on the pulverizer fighting style.",
+    off = "You focus your attention on using no specific fighting style."},
+  mutilator = { type = "knighthood",
+    def = "You are fighting with a mutilator's cunning.",
+    on = "You focus your attention on the mutilator fighting style.",
+    off = "You focus your attention on using no specific fighting style."},
+  poisonist = { type = "knighthood",
+    def = "You are fighting with a poisonist's eye.",
+    on = "You focus your attention on the poisonist fighting style.",
+    off = "You focus your attention on using no specific fighting style."},
 #end
 
 #if skills.cavalier then
@@ -773,9 +959,13 @@ defs_data = phpTable({
   elementshield = { type = "elementalism",
     on = {"You cross your arms and a shimmering elemental shield surrounds you.", "You already possess an element shield."}},
   levitate = { type = "elementalism",
-    on = {"You take a deep breath and fill your cheeks with air until they bulge out. After a moment, the air in your cheeks disappears and is absorbed into you.", "You are already walking on a small cushion of air."}},
+    on = {"You take a deep breath and fill your cheeks with air until they bulge out. After a moment, the air in your cheeks disappears and is absorbed into you.", "You are already walking on a small cushion of air."},
+    def = "Levitation (levitate) (indefinite).",
+    defr = [[^Levitation \(levitate\) \(\d+ minutes\)\.$]], },
   waterbreathe = { type = "elementalism",
-    on = {"You briefly hold your hand over your mouth until your lips and tongue tingle.", "You are already filtering air out of water."}},
+    on = {"You briefly hold your hand over your mouth until your lips and tongue tingle.", "You are already filtering air out of water."},
+    def = "Water Breathing (waterbreathe) (indefinite).",
+    defr = [[^Water Breathing \(waterbreathe\) \(\d+ minutes\)\.$]]},
   stoneskin = { type = "elementalism",
     on = {"Calling the powers of the elemental earth, your skin hardens with a layer of supple granite.", "You already are coated with stone."}},
 #end
@@ -1013,24 +1203,24 @@ end)
   grip = { type = "ninjakari",
     on = {"You concentrate on gripping tightly with your hands.", "You already have a firm grip."},
     off = {"You relax your grip.", "Your grip is already relaxed."}},
-  deflectright = { type = "ninjakari",
+  --[[deflectright = { type = "ninjakari",
     on = "You prepare your right hand to deflect blows.",
     off = "You relax your hands."},
   deflectleft = { type = "ninjakari",
     on = "You prepare your left hand to deflect blows.",
-    off = "You relax your hands."},
+    off = "You relax your hands."},]]
 #end
 
 #if skills.nekotai then
   grip = { type = "nekotai",
     on = {"You concentrate on gripping tightly with your hands.", "You already have a firm grip."},
     off = {"You relax your grip.", "Your grip is already relaxed."}},
-  deflectright = { type = "nekotai",
+  --[[deflectright = { type = "nekotai",
     on = "You prepare your right hand to deflect blows.",
     off = "You relax your hands."},
   deflectleft = { type = "nekotai",
     on = "You prepare your left hand to deflect blows.",
-    off = "You relax your hands."},
+    off = "You relax your hands."},]]
   scorpiontail = { type = "nekotai",
     on = "A glowing scorpion's tail arcs overhead as you shift the weight in your legs."},
   scorpionspit = { type = "nekotai",
@@ -1061,9 +1251,11 @@ end)
   timeslip = { type = "cosmic",
     on = {"Touching upon cosmic probabilities, you weave a net of safety around yourself.","You already have cast a web of safety around yourself."}},
   nimbus = { type = "cosmic",
-    def = "Cosmic Nimbus (cosmicnimbus).", -- system calls it nimbus, hence why brackets not recognised
+    def = "Cosmic Nimbus (cosmicnimbus) (indefinite).", -- system calls it nimbus, hence why brackets not recognised
     on = {"You are already surrounded with a cosmic nimbus.", "Drawing cosmic dust into a sphere, you slowly let it expand into a nimbus of glittering motes."}},
   waterwalk = { type = "cosmic",
+    def = "Waterwalking (waterwalk) (indefinite).",
+    defr = [[^Waterwalking \(waterwalk\) \(\d+ minutes\)\.$]],
     on = {"You pull a cosmic web down around your feet, and you sense that gravity will be your ally when entering water.", "You are already water walking."}},
 #end
 
@@ -1465,16 +1657,20 @@ understanding\.$]],
   doublepain = { type = "psychometabolism",
     on = "You tune your body to inflict greater pain."},
   introspection = { type = "psychometabolism",
-    on = {"You close your eyes, bow your head, and intensely focus upon your deepest, most introspective thoughts.", "Your mental prowess is already swollen to its maximum."},
-    off = "You snap your head up as you break your meditation."},
+    on = {"You split your mind's focus, allowing a part of it to introspect constantly and boost your regenerative capabilities.", "You are already introspectively boosting your regeneration."},
+    off = "You snap your head up as you break your meditation.",
+    def = "You are maintaining a constant state of introspection, boosting your regeneration."},
   energycontainment = { type = "psychometabolism",
     on = "You reconfigure your nervous system to contain and disperse elemental energies."},
   enhancementstrength = { type = "psychometabolism",
-    on = "You psionically enhance the strength of your body."},
+    on = "You psionically enhance the strength of your body.",
+    def = "Your strength is psionically enhanced."},
   enhancementdexterity = { type = "psychometabolism",
-    on = "You psionically enhance the dexterity of your body."},
+    on = "You psionically enhance the speed of your body.",
+    def = "Your dexterity is psionically enhanced."},
   enhancementspread = { type = "psychometabolism",
-    on = "You psionically enhance your body, spread through your strength and dexterity."},
+    on = "You psionically enhance your body, spread through your offensive abilities and speed.",
+    def = "Your strength and dexterity are psionically enhanced."},
   gliding = { type = "psychometabolism",
     on = "You focus your mind on the soles of your feet, adjusting their density to glide upon any surface."},
   ironskin = { type = "psychometabolism",
@@ -1533,12 +1729,12 @@ understanding\.$]],
   grip = { type = "tahtetso",
     on = {"You concentrate on gripping tightly with your hands.", "You already have a firm grip."},
     off = {"You relax your grip.", "Your grip is already relaxed."}},
-  deflectright = { type = "tahtetso",
+  --[[deflectright = { type = "tahtetso",
     on = "You prepare your right hand to deflect blows.",
     off = "You relax your hands."},
   deflectleft = { type = "tahtetso",
     on = "You prepare your left hand to deflect blows.",
-    off = "You relax your hands."},
+    off = "You relax your hands."},]]
 #end
 
 #if skills.illusions then
@@ -1703,10 +1899,15 @@ understanding\.$]],
     on = {"You weave a delicate lattice of energy around your body, sheltering your soul from the ravages of the cosmos.", "Your soul is already guarded against the ravages of the cosmos.", "Your inner worm is already guarded against the ravages of the cosmos."}},
 #end
 
+  vitality = { 
 #if skills.athletics then
-  vitality = { type = "athletics",
-    on = {"Your body positively glows with health and vitality.", "You need to be fully healthy in both body and mind before you can call upon your vitality.", "Vitality already sings in your bloodstream."},
+    type = "athletics",
+#else
+    type = "artifact",
+#end
+    on = {"Your body positively glows with health and vitality.", "You need to be fully healthy in both body and mind before you can call upon your vitality.", "Vitality already sings in your bloodstream.","You cannot call upon your vitality again so soon."},
     off = "A surge of rejuvenating energy floods your system, healing your wounds."},
+#if skills.athletics then
   breathing = { type = "athletics",
     on = "You take a few deep breaths to prepare your body for a marathon workout."},
   resistance = { type = "athletics", on = "You call aloud and feel an aura of resistance shroud itself silently about you." },
@@ -1716,12 +1917,11 @@ understanding\.$]],
     on = {"A brief shiver runs through your body.", "You are already attuned to the flows of weather."}},
   regeneration = { type = "athletics",
     on = {"You begin to concentrate on regeneration of your wounds.", "You are already regenerating."},
-    def = "Your regeneration is boosted.",
+    def = "You are regenerating lost health.",
     off = {"You call a halt to the regenerative process.", "You are not attempting to regenerate lost health.", "You have no regenerative ability to boost."}},
   boosting = { type = "athletics",
     on = {"You call upon your inner strength to boost your health regeneration.", "Your regeneration is already boosted."},
-    def = "Your regeneration is boosted.",
-    off = "Your regeneration is already boosted."},
+    def = "Your regeneration is boosted."},
   surge = { type = "athletics",
     on = {"You pound your chest with your fists, and bellow fiercely. Your body expands to heroic proportions.", "Your body is already surged to maximum potential."},
     off = {"Your body is not under a surge.", "You relax the surge of power through your body, and dwindle to normal proportions."}},
@@ -1744,12 +1944,12 @@ understanding\.$]],
   grip = { type = "shofangi",
     on = {"You concentrate on gripping tightly with your hands.", "You already have a firm grip."},
     off = {"You relax your grip.", "Your grip is already relaxed."}},
-  deflectright = { type = "shofangi",
+  --[[deflectright = { type = "shofangi",
     on = "You prepare your right hand to deflect blows.",
     off = "You relax your hands."},
   deflectleft = { type = "shofangi",
     on = "You prepare your left hand to deflect blows.",
-    off = "You relax your hands."},
+    off = "You relax your hands."},]]
 #end
 
 
@@ -2091,7 +2291,9 @@ defences.complete_def = function(tbl)
   defs_data[name].tooltip = tooltip or defs_data[name].tooltip
 end
 
-defences.complete_def({name = "Acquisitio", def = "You are filled with the greed of Acquisitio.", tooltip = "Pick up your kills, and random other things."})
+defences.complete_def({name = "Acquisitio", def = "Ritual of Acquisitio (acquisitio) (indefinite).",
+  defr = [[^Ritual of Acquisitio \(acquisitio\) \(\d+ minutes\)\.$]],
+  tooltip = "Pick up your kills, and random other things."})
 
 defences.complete_def({name = "Adroitness", def = "You are moving at an increased rate of speed.", tooltip = "Allows you to move a few extra steps before receiving the 'Now, now, don't be so hasty!' message."})
 
@@ -2136,7 +2338,9 @@ defences.complete_def({name = "Presence", def = "You have a bardic presence.", t
 
 defences.complete_def({name = "Barkskin", def = "You have skin covered in treebark.", tooltip = "Reduces damage."})
 
-defences.complete_def({name = "Beauty", def = "Your ego is regenerating by virtue of the Ray of Beauty.", tooltip = "Passive ego regeneration."})
+defences.complete_def({name = "Beauty", def = "Beauty Enchantment (beauty) (indefinite).",
+  defr = [[^Beauty Enchantment \(beauty\) \(\d+ minutes\)\.$]],
+  tooltip = "Passive ego regeneration."})
 
 defences.complete_def({name = "benignprophesy", def = "You are under the effect of a benign prophesy.", tooltip = "Increases maximum health."})
 
@@ -2223,7 +2427,9 @@ defences.complete_def({name = "DarkSpirit", def = "Your flesh is bound with a da
 
 defences.complete_def({name = "Deathmask", def = "Your face is painted with a gruesome deathmask.", tooltip = "Gain reserves when you kill."})
 
-defences.complete_def({name = "Deathsight", def = "You are seeing death.", tooltip = "Shows when and where people die."})
+defences.complete_def({name = "Deathsight", def = "Deathsight (deathsight) (indefinite).",
+  defr = [[^Deathsight \(deathsight\) \(\d+ minutes\)\.$]],
+   tooltip = "Shows when and where people die."})
 
 defences.complete_def({name = "Deepbond", defr = [[^You have a deepbond with w+\.$]], tooltip = "Will conglutinate on the ship on death off the Prime Material Plane."})
 
@@ -2378,7 +2584,7 @@ defences.complete_def({name = "GreenTea", def = "Your movements are herbally hei
 
 defences.complete_def({name = "Grip", def = "Your hands are gripping your wielded items tightly.", tooltip = "Prevents many things that unwield or drop wielded items."})
 
-defences.complete_def({name = "red", def = "The pull of the earth roots you more firmly to the ground.", tooltip = "Resists summons."})
+defences.complete_def({name = "Red ", def = "The pull of the earth roots you more firmly to the ground.", tooltip = "Resists summons."})
 
 defences.complete_def({name = "Malkuth", def = "The pull of the earth roots you more firmly to the ground.", tooltip = "Resists summons."})
 
@@ -2427,19 +2633,25 @@ defences.complete_def({name = "IronWill", def = "You are regenerating mental str
 
 defences.complete_def({name = "Kafe", def = "You have ingested the kafe bean and are feeling extremely energetic.", tooltip = "Allows quick awakening."})
 
-defences.complete_def({name = "Deflectright", def = "You are deflecting blows with your right hand.", tooltip = "Reduces damage on that side."})
-defences.complete_def({name = "Deflectleft", def = "You are deflecting blows with your left hand.", tooltip = "Reduces damage on that side."})
+--[[defences.complete_def({name = "Deflectright", def = "You are deflecting blows with your right hand.", tooltip = "Reduces damage on that side."})
+defences.complete_def({name = "Deflectleft", def = "You are deflecting blows with your left hand.", tooltip = "Reduces damage on that side."})]]
 
 defences.complete_def({name = "Kephera", def = "You are empowered by the Kephera Queen of Queens.", tooltip = "Unweighted +1 to dexterity, intelligence, and charisma."})
 
-defences.complete_def({name = "Kingdom", def = "Your blood is clotting by virtue of the Ray of the Kingdom.", tooltip = "Reduces bleeding on a tick."})
+defences.complete_def({name = "Kingdom", def = "Kingdom Enchantment (kingdom) (indefinite).",
+  defr = [[^Kingdom Enchantment \(kingdom\) \(\d+ minutes\)\.$]],
+  tooltip = "Reduces bleeding on a tick."})
 
 defences.complete_def({name = "Kite", def = "You are flying a kite.", tooltip = "Alerts to when people fly above."})
 
 defences.complete_def({name = "Lawyerly", def = "You are carrying yourself with a lawyerly demeanor.", tooltip = "Boosts pettifoggery."})
 
-defences.complete_def({name = "Levitation", def = "You are walking on a small cushion of air.", tooltip = "Prevents harm from most falls."})
-defences.complete_def({name = "Levitate", def = "You are walking on a small cushion of air.", tooltip = "Prevents harm from most falls."})
+defences.complete_def({name = "Levitation", def = "Levitation (levitate) (indefinite).",
+  defr = [[^Levitation \(levitate\) \(\d+ minutes\)\.$]], 
+  tooltip = "Prevents harm from most falls."})
+defences.complete_def({name = "Levitate", def = "Levitation (levitate) (indefinite).",
+  defr = [[^^Levitation \(levitate\) \(\d+ minutes\)\.$]],
+  tooltip = "Prevents harm from most falls."})
 
 defences.complete_def({name = "Lichdom", def = {"You are a lich.", "You are an archlich."}, tooltip = "Increased strength by night, decreased by day; regeneration at night; cold touch; reduced power for contagion and prevents it being blown away."})
 
@@ -2462,7 +2674,9 @@ defences.complete_def({name = "Masquerade", defr = [[^You are masquerading as \w
 
 defences.complete_def({name = "Maw", def = "You are wearing a magic maw of burrowing.", tooltip = "Allows burrowing."})
 
-defences.complete_def({name = "Mercy", def = "Your health is regenerating by virtue of the Ray of the Merciful Hand.", tooltip = "Passive health regeneration."})
+defences.complete_def({name = "Mercy", def = "Mercy Enchantment (mercy) (indefinite).",
+  defr = [[^Mercy Enchantment \(mercy\) \(\d+ minutes\)\.$]], 
+  tooltip = "Passive health regeneration."})
 
 defences.complete_def({name = "Metawake", def = "You are concentrating on maintaining distance from the dreamworld.", tooltip = "Completely prevents sleep at the cost of a mana drain."})
 
@@ -2508,7 +2722,9 @@ defences.complete_def({name = "Penumbra", def = "You have evoked the ritual of p
 
 defences.complete_def({name = "Perch", def = "You are perched here like a crow.", tooltip = "Prevents movement."})
 
-defences.complete_def({name = "Perfection", def = "Your mana is regenerating by virtue of the Ray of Perfection.", tooltip = "Passive mana regeneration."})
+defences.complete_def({name = "Perfection", def = "Perfection Enchantment (perfection) (indefinite).",
+  defr = [[^Perfection Enchantment \(perfection\) \(\d+ minutes\)\.$]],
+  tooltip = "Passive mana regeneration."})
 
 defences.complete_def({name = "Performance", def = "You are in performance mode.", tooltip = "Provides ego regeneration and mana drain, and allows other [[Dramatics]] skills."})
 
@@ -2562,7 +2778,9 @@ defences.complete_def({name = "Rebounding", def = "You are protected from hand-h
 
 defences.complete_def({name = "Reflection", def = "You are surrounded by one reflection of yourself.", tooltip = "Protects against the next attack."})
 
-defences.complete_def({name = "Boosting", def = {"You are regenerating lost health.", "Your regeneration is boosted."}, tooltip = "Health regeneration with a constant mana and willpower drain. Boosting increases the health regained."})
+defences.complete_def({name = "Regeneration", def = "You are regenerating lost health.", tooltip = "Grants a 2/8 boost to health regeneration"})
+
+defences.complete_def({name = "Boosting", def = "Your regeneration is boosted.", tooltip = "Health regeneration with a constant mana drain. Boosting increases the health regained."})
 
 defences.complete_def({name = "Resistance", def = "You are resisting magical damage.", tooltip = "Reduction of damage from magical sources."})
 
@@ -2591,6 +2809,8 @@ defences.complete_def({name = "Selfishness", def = "You are feeling quite selfis
 defences.complete_def({name = "garb", def = "You are wearing a garb of shadows.", tooltip = "Reduces damage from magical attacks and poisons."})
 
 defences.complete_def({name = "Shadow Shroud", def = "You are wearing a magic shroud.", tooltip = "Conceals most actions."})
+
+defences.complete_def({name = "Mindfield Arti", def = "You will discharge a psychic lash from a powerful artifact on those who scry.", tooltip = "damages those who scry you"})
 
 defences.complete_def({name = "Shield", def = "You are surrounded by a nearly invisible magical shield.", tooltip = "Protection against most attacks."})
 
@@ -2672,11 +2892,15 @@ defences.complete_def({name = "VitalityAura", def = "You are radiating a healing
 
 defences.complete_def({name = "Warrior", def = "You are assisted by the Warrior.", tooltip = "Aggressive tarot flings will be accompanied by damage."})
 
-defences.complete_def({name = "Waterbreathe", def = "You are filtering air from water for breathing.", tooltip = "Allows breathing underwater."})
+defences.complete_def({name = "Waterbreathe", def = "Water Breathing (waterbreathe) (indefinite).",
+  defr = [[^Water Breathing \(waterbreathe\) \(\d+ minutes\)\.$]],
+  tooltip = "Allows breathing underwater."})
 
 defences.complete_def({name = "WaterShield", def = "You are protected by the power of the water spiritshield.", tooltip = "Resistance to electric damage."})
 
-defences.complete_def({name = "Waterwalk", def = "You can walk upon water.", tooltip = "Allows walking on water."})
+defences.complete_def({name = "Waterwalk", def = "Waterwalking (waterwalk) (indefinite).",
+  defr = [[^Waterwalking \(waterwalk\) \(\d+ minutes\)\.$]],
+  tooltip = "Allows walking on water."})
 
 defences.complete_def({name = "Waylay", defr = [[^You are setup to waylay \w+\.$]], tooltip = "Will attack and possibly trap the target on entry to the same room."})
 
@@ -2692,15 +2916,17 @@ defences.complete_def({name = "World", defr = [[^You are strengthened by the pow
 
 defences.complete_def({name = "Wounded", def = "You are acting more wounded than you actually are.", tooltip = "Appear more wounded."})
 
-defences.complete_def({name = "Yellow", def = "You have empowered your yellow chakra.", tooltip = "Weighted +1 to constitution."})
+defences.complete_def({name = "Yellow ", def = "You have empowered your yellow chakra.", tooltip = "Adds a 1/5 boost to health for a time"})
 
 defences.complete_def({name = "Yesod", def = "Your actions are cloaked in secrecy.", tooltip = "Conceals most actions."})
 
-defences.complete_def({name = "Yoyo", def = "You are carrying a quickly spinning yoyo.", tooltip = "Pick up your kills, and random other things."})
+defences.complete_def({name = "Yoyo", def = "You are carrying a noisy clockwork yoyo.", tooltip = "Pick up your kills, and random other things."})
 
 defences.complete_def({name = "Zealotry", def = "You are carrying yourself with the demeanor of a zealot.", tooltip = "Boosts passion."})
 
-defences.complete_def({name = "nimbus", tooltip = "+10DMP for Cosmic resistance"})
+defences.complete_def({name = "nimbus", def = "Cosmic Nimbus (cosmicnimbus) (indefinite).",
+  defr = [[^Cosmic Nimbus \(cosmicnimbus\) \(\d+ minutes\)\.$]],
+  tooltip = "+10DMP for Cosmic resistance"})
 
 -- for def, deft in defs_data:pairs() do
 --   echof("skillset: %s, buff name: %s, def line: %s", (tostring(deft.type) or "(not available)"), (tostring(def) or "(none)"), (type(deft.def == "string") and tostring(deft.def) or "(not availabe)"))
@@ -3214,7 +3440,7 @@ signals.systemstart:connect(function ()
 
   -- remove skillsets from ignorelist that we don't have, for people that change
   for skillset, _ in pairs(sk.ignored_defences) do
-    if skillset ~= "general" and skillset ~= "enchantment" and not me.skills[skillset] then
+    if skillset ~= "general" and skillset ~= "enchantment" and skillset ~= "artifact" and not me.skills[skillset] then
       sk.ignored_defences[skillset] = nil
     end
   end
@@ -3434,9 +3660,10 @@ local function show_defs(tbl, linkcommand, cmdname)
   local underline = setUnderline; _G.setUnderline = function () end
 
   show_em(nil, defences.def_types.general)
+  show_em("Artifact\\Curio", defences.def_types.artifact)
 
   for j,k in pairs(defences.def_types) do
-    if j ~= "general" then show_em (j, k) end
+    if j ~= "general" and j ~= "artifact" then show_em (j, k) end
   end
 
   _G.setUnderline = underline
@@ -3608,10 +3835,11 @@ function showhidelist()
 
   echof("Select which skillsets or skills to show in defence display lists:")
   show_em("general", sk.ignored_defences.general)
+  show_em("artifact", sk.ignored_defences.artifact)
 
   local function f()
     for j,k in pairs(sk.ignored_defences) do
-      if j ~= "general" then show_em (j, k) end
+      if j ~= "general" and j ~= "artifact" then show_em (j, k) end
     end
   end
 

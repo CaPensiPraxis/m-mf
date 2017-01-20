@@ -125,7 +125,7 @@ config_dict = pl.OrderedMap {
   {$(conf_name) = {
     type = "string",
     check = function (what)
-      if contains(rift.curativeherbs, what) then return true end
+      if contains(rift.sparkleherbs, what) then return true end
     end,
     onset = function ()
       dict.healhealth.herb.eatcure = conf.sparkleherb
@@ -157,6 +157,31 @@ config_dict = pl.OrderedMap {
       conf.sparkle = nil end,
     installcheck = function ()
       echof("Do you want to make use of sparkle to heal?") end,
+  }},
+#conf_name = "loadsap"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s import sap specific priorities on sap and import aeon specific priorities on cure", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s import sap specific priorities on sap and import aeon specific priorities on cure", getDefaultColor()) end,
+    check = function() return conf.sapprios and conf.sapprios ~= "none" end,
+    checkfail = function() echof("<250,0,0>Warning:%s Need to set a prio list for sap to use this config", getDefaultColor()) end,
+  }},
+#conf_name = "sapprios"
+  {$(conf_name) = {
+    type = "string",
+    check = function(what) return io.exists(getMudletHomeDir().."/m&m/prios/"..what) end,
+    onset = function() echof("%sWill use <0,250,0>%s %s for sap curing priorities.", getDefaultColor(), conf.sapprios, getDefaultColor()) end,
+  }},
+#conf_name = "aeonprios"
+  {$(conf_name) = {
+    type = "string",
+    check = function(what) return io.exists(getMudletHomeDir().."/m&m/prios/"..what) end,
+    onset = function() echof("%sWill use <0,250,0>%s%s for aeon curing priorities.", getDefaultColor(), conf.aeonprios, getDefaultColor()) end,
+  }},
+#conf_name = "catsluck"
+  {$(conf_name) = {
+    type = "string",
+    onset = function() echof("%sWill use <0,250,0>%s%s for casting Cats Luck", getDefaultColor(), conf.catsluck, getDefaultColor()) end,
   }},
 #if skills.cavalier then
 #conf_name = "hook"
@@ -226,6 +251,13 @@ config_dict = pl.OrderedMap {
     onshow = "Double do actions in stupidity",
     v2 = true
   }},
+#conf_name = "glenfiddich"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s automatically fill whiskey during deathsongs.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s automatically fill whiskey during deathsongs.", getDefaultColor()) end,
+    onshow = "Automatically fill your whiskey during deathsong",
+  }},
 #conf_name = "cleanse"
   {$(conf_name) = {
     type = "boolean",
@@ -240,6 +272,24 @@ config_dict = pl.OrderedMap {
     ondisabled = function () echof("<250,0,0>Won't%s use the cleanse effect to cure.", getDefaultColor()) end,
     installstart = function () conf.cleanse = nil end,
     installcheck = function () echof("Should the system make use of any type of cleanse effect for curing?") end
+  }},
+#conf_name = "autohide"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s auto hide inactive skillsets on deflist.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s autohide inactive skillsets on deflist.", getDefaultColor()) end,
+  }},
+#conf_name = "wonderall"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s use wondercorn activate all.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s use wondercorn activate all.", getDefaultColor()) end,
+  }},
+#conf_name = "geniesall"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s use curio collection activate genies.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s use curio collection activate genies.", getDefaultColor()) end,
   }},
 #conf_name = "rockclimbing"
   {$(conf_name) = {
@@ -796,6 +846,20 @@ config_dict = pl.OrderedMap {
     installstart = function () conf.autorecharge = nil end,
     installcheck = function () echof("Should we automatically recharge scrolls & enchantments from a cube after usage?") end
   }},
+#conf_name = "attemptearlystun"
+  {$(conf_name) = {
+    type = "boolean",
+    onshow = "Try to cure before stun wears off in slowcuring",
+    onenabled = function() echof("<0,250,0>Will%s attempt to cure before stun wears off in slowcuring.", getDefaultColor()) end,
+    ondisabled = function() echof("<250,0,0>Won't%s attempt to cure before stun wears off in slowcuring.", getDefaultColor()) end,
+  }},
+#conf_name = "adrenaline"
+  {$(conf_name) = {
+    type = "boolean",
+    onshow = "Use Adrenaline instead of quicksilver for the def",
+    onenabled = function() echof("<0,250,0>Will%s use adrenaline instead of quicksilver", getDefaultColor()) end,
+    ondisabled = function() echof("<250,0,0>Won't%s use adrenaline instead of quicksilver", getDefaultColor()) end,
+  }},
 #conf_name = "preclot"
   {$(conf_name) = {
     type = "boolean",
@@ -958,6 +1022,43 @@ config_dict = pl.OrderedMap {
       end
     end
   }},
+#conf_name = "focus"
+  {$(conf_name) = {
+    type = "string",
+    onset = function()
+      local aff = conf.focus
+      if (dict[aff].lucidity and not dict[aff].lucidity.focus) and (dict[aff].wafer and not dict[aff].wafer.focus) and (dict[aff].steam and not dict[aff].steam.focus) then
+        echof("%s isn't an affliction we can focus.", aff)
+        return
+      end
+      if not me.focus[aff] then me.focus[aff] = true else me.focus[aff] = nil end
+
+      if me.focus[aff] then
+        echof("Will be focusing %s always.", aff)
+      else
+        echof("Will not be focusing %s always.", aff)
+      end
+    end
+  }},
+#conf_name = "aeonfocus"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s use focus in aeon.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s use focus in aeon.", getDefaultColor()) end,
+  }},
+#conf_name = "beastfocus"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s use beastfocus if possible.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s use beastfocus.", getDefaultColor()) end,
+  }},
+#conf_name = "powerfocus"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s use powerfocus if possible.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s use powerfocus.", getDefaultColor()) end,
+  }},
+
 #if skills.illusions then
 #conf_name = "changerace"
   {$(conf_name) = {
@@ -1093,6 +1194,24 @@ config_dict = pl.OrderedMap {
     end,
     installstart = function ()
       conf.warningtype = "all" end,
+  }},
+#conf_name = "autoarena"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s automatically enable/disable arena mode as you enter/leave the arena.", getDefaultColor()) end,
+    ondisabled = function () echof("<250,0,0>Won't%s automatically enable/disable arena mode as you enter/leave the arena..", getDefaultColor()) end,
+  }}, 
+#conf_name = "arena"
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will%s operate in arena mode.", getDefaultColor()) end,
+    ondisabled = function () echof("<0,250,0>Won't%s operate in arena mode.", getDefaultColor()) end,
+  }},
+#conf_name = "oldwarrior" 
+  {$(conf_name) = {
+    type = "boolean",
+    onenabled = function () echof("<0,250,0>Will cure using old warrior mechanics, use 'mmsp convert off' to make appropiate changes", getDefaultColor()) end,
+    ondisabled = function () echof("<0,250,0>Will cure using new warrior mechanics, use 'mmsp convert on' to make appropiate changes", getDefaultColor()) end
   }},
 #if skills.elementalism or skills.healing then
 #conf_name = "cleansetype"
@@ -1234,6 +1353,15 @@ local tntf_tbl = {
     alreadyoff = function () disableTrigger "Pre-parse anti-illusion";
           echof"Anti-illusion is already disabled." end,
   },
+  arena = {
+    on = function()
+      local echos = {"Arena mode enabled. Good luck!", "Beat 'em up! Arena mode enabled.", "Arena mode on.", "Arena mode enabled. Kill them all!"}
+            echof(echos[math.random(#echos)])
+    end,
+    alreadyon = function() echof("Arena mode is already on.") end,
+    off = function() echof("Arena mode disabled.") end,
+    alreadyoff = function() echof("Arena mode is already off.") end
+  },
   keepup = {
     on = function () echof"Auto keepup on." make_gnomes_work() end,
     alreadyon = function () echof"Auto keepup is already on." end,
@@ -1327,6 +1455,16 @@ function config.set(what, option, echoback)
   end
 
   if config_dict[what].type == "boolean" then
+
+    if config_dict[what].check and not config_dict[what].check(option) then
+      if config_dict[what].checkfail then
+        config_dict[what].checkfail()
+      else
+        sendf("%s isn't something you can set %s to be.", option, what)
+      end
+      return
+    end
+
     if (type(option) == "boolean" and option == true) or convert_string(option) or (option == nil and not conf[what]) then
       conf[what] = true
       if echoback then config_dict[what].onenabled() end

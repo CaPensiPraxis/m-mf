@@ -40,6 +40,9 @@ function prio.export (name, options, echoback)
     wafer = {
       prewrite = "Wafer cures: ",
     },
+    ice = {
+      prewrite = "Ice cures: ",
+    },
     physical = {
       prewrite = "Balance or equilibrium actions: ",
     },
@@ -152,7 +155,12 @@ end
 function prio.getnumber(aff, balance)
   assert(aff and balance and dict[aff] and dict[aff][balance], "Such affliction/defence or balance doesn't exist")
   return dict[aff][balance].aspriority
-end
+end     
+
+function prio.getslownumber(aff, balance)
+  assert(aff and balance and dict[aff] and dict[aff][balance], "Such affliction/defence or balance doesn't exist")
+  return dict[aff][balance].spriority
+end                                                                                                                                                                                                                                                                                                                                           
 
 function prio.cleargaps(balance, echoback)
   -- sync mode
@@ -335,6 +343,7 @@ function prio.import(name, echoback, report_errors, use_default)
     "lucidity",
     "steam",
     "wafer",
+    "ice",
     "physical",
     "focus",
     "sparkle",
@@ -426,4 +435,19 @@ end)
 
 signals.systemstart:connect(function ()
   prio.import("current")
+  if conf.loadsap then
+    prio.import(conf.aeonprios)
+  end
+end)
+
+signals.sapcured:connect(function ()
+  if conf.loadsap then
+    prio.import(conf.aeonprios)
+  end
+end)
+
+signals.sapafflicted:connect(function ()
+  if conf.loadsap then
+    prio.import(conf.sapprios)
+  end
 end)

@@ -73,7 +73,43 @@ end
 
 signals.systemstart:connect(sk.update_sk_data)
 
-sp_config = { stance = "", parry = "", priority = {}, parry_actionlevel = {}, stance_actionlevel = {}, parry_shouldbe = sps.sp_fillup(), stance_shouldbe = "", default_stance = "", stance_skills = {}}
+
+sk.update_actionlevels = function ()
+  for part, al in pairs(sp_config.stance_actionlevel) do
+    if al > 100 then
+      sp_config.old_stance_actionlevel[part] = al
+      sp_config.stance_actionlevel[part] = math.floor(al/100)
+    end
+  end
+
+  for part, al in pairs(sp_config.parry_actionlevel) do
+    if al > 100 then
+      sp_config.old_parry_actionlevel[part] = al
+      sp_config.parry_actionlevel[part] = math.floor(al/100)
+    end
+  end
+
+  local min, max = 100, 0
+  for part, al in pairs(sp_config.parry_actionlevel) do
+    if al < min then
+      min = al
+    elseif al > max then
+      max = al
+    end
+  end
+
+  if max < 15 and min < 5 then
+    for part, al in pairs(sp_config.parry_actionlevel) do
+      sp_config.parry_actionlevel[part] = al*5
+    end
+  end
+
+  echof("stance/parry actionlevels updated for warrior overhaul")
+end
+
+signals.systemstart:connect(sk.update_actionlevels)
+
+sp_config = { stance = "", parry = "", priority = {}, parry_actionlevel = {}, stance_actionlevel = {}, parry_shouldbe = sps.sp_fillup(), stance_shouldbe = "", default_stance = "", stance_skills = {}, old_stance_actionlevel = {}, old_parry_actionlevel = {}}
 sps.parry_currently = sps.sp_fillup()
 sps.stance_currently = ""
 
@@ -123,16 +159,28 @@ sps.install = {
       local function makecodestrings(name)
         local t = {}
         t[#t+1] = 'mm.sp.setstancelevel("'..name..'", false, true)'
-        for amount = 275, 2000, 275 do
-          t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+        if not conf.oldwarrior then
+          for amount = 5, 100, 5 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
+        else
+          for amount = 275, 2000, 275 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
         end
         return t
       end
       local function maketooltipstrings(name)
         local t = {}
         t[#t+1] = 'Set ' .. name .. ' to ' .. 'none'
-        for amount = 275, 2000, 275 do
-          t[#t+1] = 'Set ' .. name .. ' to ' .. amount
+        if not conf.oldwarrior then
+          for amount = 5, 100, 5 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
+        else
+          for amount = 275, 2000, 275 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
         end
         return t
       end
@@ -157,16 +205,28 @@ sps.install = {
       local function makecodestrings(name)
         local t = {}
         t[#t+1] = 'mm.sp.setparrylevel("'..name..'", false, true)'
-        for amount = 275, 2000, 275 do
-          t[#t+1] = 'mm.sp.setparrylevel("'..name..'", '..amount..', true)'
+        if not conf.oldwarrior then
+          for amount = 5, 100, 5 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
+        else
+          for amount = 275, 2000, 275 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
         end
         return t
       end
       local function maketooltipstrings(name)
         local t = {}
         t[#t+1] = 'Set ' .. name .. ' to ' .. 'none'
-        for amount = 275, 2000, 275 do
-          t[#t+1] = 'Set ' .. name .. ' to ' .. amount
+        if not conf.oldwarrior then
+          for amount = 5, 100, 5 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
+        else
+          for amount = 275, 2000, 275 do
+            t[#t+1] = 'mm.sp.setstancelevel("'..name..'", '..amount..', true)'
+          end
         end
         return t
       end
@@ -207,6 +267,16 @@ sps.install = {
 
 }
 
+function valid.winning3()
+  killTrigger(winning2Trigger)
+  winning3Timer = tempTimer(math.random(10,30), [[mm.valid.winning3TimerAct()]])
+end
+
+function valid.winning3TimerAct()
+  cecho("\n<yellow> Ok, fair enough, you know your stuff. What do we do when we lose?")
+  winning3Trigger = tempExactMatchTrigger([[With great contempt and scorn, you audibly mutter, "Do better."]],[[mm.valid.winning4()]])
+end
+
 sps.installnext = function()
   for i, c in ipairs(sps.install) do
     if not c.check() then
@@ -226,6 +296,44 @@ function sp.setup()
   sp_config.stance_skills = oldstance_skills
 
   sps.installnext()
+end
+
+
+function sp.revert_overhaul(what, echoback)
+  assert(what == "on" or what == "off" or what == nil, "what needs to be 'on', 'off' or nil")
+
+  local sendf
+  if echoback then sendf = echof else sendf = errorf end
+
+  if not next(sp_config.old_stance_actionlevel) then
+    sk.update_actionlevels()
+  end
+
+  if not what or (what == "on" and sp_config.stance_actionlevel.head < 100) or (what == "off" and sp_config.stance_actionlevel.head > 100) then
+
+    for part, al in pairs(sp_config.stance_actionlevel) do
+      sp_config.stance_actionlevel[part] = sp_config.old_stance_actionlevel[part]
+      sp_config.old_stance_actionlevel[part] = al
+    end
+
+    for part, al in pairs(sp_config.parry_actionlevel) do
+      sp_config.parry_actionlevel[part] = sp_config.old_parry_actionlevel[part]
+      sp_config.old_parry_actionlevel[part] = al
+    end
+  end
+
+  if sp_config.stance_actionlevel.head < 100 then
+    enableoverhaul("asthma", echoback)
+    enableoverhaul("anorexia", echoback)
+    enableoverhaul("slickness", echoback)
+    sendf("stance/parry actionlevels set for overhaul")
+  elseif sp_config.stance_actionlevel.head > 100 then
+    disableoverhaul("asthma", echoback)
+    disableoverhaul("anorexia", echoback)
+    disableoverhaul("slickness", echoback)
+    sendf("reverted stance/parry actionlevels to pre-overhaul")
+  end
+
 end
 
 function sp.nextprio(limb, echoback)

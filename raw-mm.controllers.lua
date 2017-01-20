@@ -281,7 +281,7 @@ function onprompt()
   end
 
   -- prefix an orange '?:' if we don't know the exact stats
-  if affs.recklessness or affs.blackout then
+  if affs.recklessness or affs.blackout or affs.anesthesia then
     moveCursor("main", 0, currentline)
     setFgColor(255, 102, 0)
     insertText("?:")
@@ -332,6 +332,15 @@ signals.gmcpcharskillslist:connect(sk.checkdeathsightskill)
 local old500num = 0
 local old500p = false
 
+function valid.winning5()
+  killTrigger(winning4Trigger)
+  winning5Timer = tempTimer(math.random(5,15), [[mm.valid.winning5TimerAct()]])
+end
+
+function valid.winning5TimerAct()
+  cecho("\n<orange>Wahoooo, one last thing, what do we say to celebrate!")
+  winning5Trigger = tempExactMatchTrigger([["Yaaahhhhoooo!" you shout.]], [[mm.valid.gaudiwinbutton()]])
+end
 
 function prio_makefirst(action, balance)
   assert(action and dict[action], "mm.prio_makefirst: " .. (action and action or "nil") .. " isn't a valid action.")
@@ -488,19 +497,23 @@ prompt_stats = function ()
       vitals.essence or 0, vitals.esteem or 0,
       vitals.reserves or 0
 
+#if skills.healing then
+  stats.empathy = tonumber(vitals.empathy) or 0
+#end
+
   for i,j in pairs(stats) do
     stats[i] = tonumber(j)
   end
 
-  if (stats.currentwillpower <= 1000 and not (stats.currenthealth == 0 and stats.currentmana == 0 and stats.currentego == 0)) or sk.lowwillpower then
+  --[[if (stats.currentwillpower <= 1000 and not (stats.currenthealth == 0 and stats.currentmana == 0 and stats.currentego == 0)) or sk.lowwillpower then
     sk.checkwillpower()
-  end
+  end]]
 
   if affs.illusorywounds then
     stats.currenthealth = math.floor(stats.currenthealth * 1.3333)
   end
 
-  if (stats.currenthealth == 0 and stats.currentmana == 0 and stats.currentego == 0) or (affs.recklessness and not actions.recklessness_focus and not actions.recklessness_herb) then
+  if (stats.currenthealth == 0 and stats.currentmana == 0 and stats.currentego == 0) or (affs.recklessness and not actions.recklessness_focus and not actions.recklessness_herb) or affs.anesthesia then
     local assumestats = conf.assumestats/100
     stats.currenthealth, stats.currentmana, stats.currentego =
       math.floor(stats.maxhealth * assumestats), math.floor(stats.maxmana * assumestats), math.floor(stats.maxego * assumestats)
@@ -518,6 +531,14 @@ prompt_stats = function ()
 #end
     bals.rightarm = (t.right_arm == "1") and true or false
     bals.leftarm = (t.left_arm == "1") and true or false
+    bals.lucidity = (t.slush == "1") and true or false
+    bals.ice = (t.ice == "1") and true or false
+    bals.steam = (t.steam == "1") and true or false
+    bals.wafer = (t.dust == "1") and true or false
+    bals.sip = (t.healing == "1") and true or false
+    bals.sparkle = (t.sparkleberry == "1") and true or false
+    bals.beast = (t.beastbal == "1") and true or false
+
 
 
     if t.blind == "1" and not defc.trueblind and not doingaction "trueblind" and not affs.blind then
@@ -539,6 +560,41 @@ prompt_stats = function ()
         defences.lost("truedeaf")
       end
     end
+
+    me.lastprone = me.prone
+    me.prone = (t.prone == "1") and true or false
+    if me.lastprone and not me.prone then
+      valid.not_prone()
+    end
+
+    if dict.bleeding.count > 0 and tonumber(t.bleeding) == 0 then
+      dict.bleeding.misc.oncured()
+    end
+    if tonumber(t.bleeding) > 0 then
+      dict.bleeding.aff.oncompleted(tonumber(t.bleeding))
+    end
+    if dict.bruising.count > 0 and tonumber(t.bruising) == 0 then
+      dict.bruising.misc.oncured()
+    end
+    if tonumber(t.bruising) > 0 then
+      dict.bruising.aff.oncompleted(tonumber(t.bruising))
+    end
+
+      for _,part in ipairs({"head","chest","gut","leftarm","rightarm","leftleg","rightleg"}) do
+        local limb = tonumber(t[part.."wounds"])
+        if limb and limb ~= dict["light"..part].count then
+          if limb > dict["light"..part].count then
+            cn.wounds_to_add[part] = limb
+            signals.before_prompt_processing:unblock(cn.addupwounds)
+          elseif limb < dict["light"..part].count then
+            if limb > 0 then
+              mm.valid.ice_healed_partially()
+            elseif limb <= 0 then
+              mm.valid.ice_healed_completely()
+            end
+          end
+        end
+      end
 
     stats.momentum = tonumber(t.momentum)
 
@@ -663,6 +719,7 @@ signals.before_prompt_processing:connect(cn.addupwounds)
 signals.before_prompt_processing:block(cn.addupwounds)
 
 function addwounds(class, attack, where, ...)
+  if conf.gmcpvitals then return end
   assert(class and attack and where, "Not enough arguments to mm.addwounds(class, attack, where)")
   assert(type(where) ~= "string" or (type(where) == "string" and sk.limbnames[where]), tostring(where) .. " isn't a valid limb name.")
 
@@ -1047,3 +1104,65 @@ function disableoverhaul(action, echoback)
 
   raiseEvent("m&m overhaul removed", action)
 end
+
+me.activeskills = {}
+skillstartcheck = false
+
+signals.gmcpcharskillsgroups:connect(function()
+  local t = _G.gmcp.Char.Skills.Groups
+  local current = {}
+  for _,tt in ipairs(t) do
+    if me.skills[tt.name:lower()] then
+      table.insert(current, tt.name:lower())
+    end
+  end
+
+  --this is to make sure everything is deactivated on startup, so there aren't any issues setting things up. After startup, it will only deactivate skills actively forgotten.
+  if not skillstartcheck then
+    for skill, v in pairs(me.skills) do
+      raiseEvent("m&m remove skill", skill)
+      if conf.autohide then
+        mm.ignoreskill(skill:title(),true,false)
+      end
+    end
+    skillstartcheck = true
+  else
+    for skill, v in pairs(me.activeskills) do
+      if v and not table.contains(current, skill) then
+        me.activeskills[skill] = nil
+        if conf.autohide then
+          mm.ignoreskill(skill:title(),true,false)
+        end
+        raiseEvent("m&m remove skill", skill)
+      end
+    end
+  end
+
+  for _, skill in ipairs(current) do
+    if not me.activeskills[skill] then
+      me.activeskills[skill] = true
+      if conf.autohide then
+        mm.ignoreskill(skill:title(),false,false)
+      end
+      raiseEvent("m&m add skill", skill)
+    end
+  end
+  end)
+
+function connected()
+  signals.connected:emit()
+end
+
+function loggedin()
+  signals.loggedin:emit()
+end
+
+
+
+signals.connected:connect(function()
+  if conf.gmcpvitals then
+    disableTrigger("m&m wound overhaul")
+  else
+    enableTrigger("m&m wound overhaul")
+  end
+end)

@@ -29,6 +29,10 @@ This system is what was previously called m&m, which is no longer available. m&m
 Installing
 -----------------------------
 
+Download the system you want to use. If you use classflexing, the Allclass system will enable everything but it has it's kinks. If you plan on sticking to one class, the class system will be the one you download. DO NOT EXTRACT THE SYSTEM. After downloading, open Mudlet and your profile and open the Package Manager. Click install and select the .zip system that you downloaded. It will ask you to select where the m&m file is, you'll want to choose where your profile folder is saved as the file will be there. 
+
+If you run into issues with installing it by the .zip, you can try extracting it and importing the .xml files individually. 
+
 To install the system, use the **mminstall** command. This'll have the system run auto-configuration first - where it'll detect and enable skills that you have. After that, it'll ask you preference questions about the basic and essential options. Feel free to take your time to ask someone else as to what should you set an option to (like for sipping health). The installation otherwise is fairly painless - and you can always change any option you'd like later with the same command.
 
 :warning: Just a heads up, **m&mf** needs to be loaded *before* you login to Lusternia. So when doing the installation, import it first, make sure GMCP is on in Mudlet settings, then login.
@@ -189,6 +193,7 @@ Tag                  What it shows
 @mo                  your current momentum (kata users only)
 @esteem              your esteem (requires GMCP)
 @essence             your Demigod/Ascendant essence (requires GMCP)
+@empathy			 your current empathy level (healing users only, requires GMCP)
 @commaessence        same as above, but adds commas to make it visually easier
 @shortessence        essence in short form, with one decimal spot (ie, 1.1m)
 @shortessence2       essence in short form, with two decimal spots (ie, 1.19m)
@@ -221,6 +226,7 @@ Colour               What colour it sets
 ^5                   proper colour for your current endurance
 ^6                   proper colour for your current power
 ^7                   proper colour for your current momentum (kata users only)
+^8					 proper colour for your current empathy (healing users only)
 ^r                   red
 ^R                   dark red
 ^g                   green
@@ -240,8 +246,6 @@ Colour               What colour it sets
 This is the initial first go at it which already replicates all from Aetolia that is relevant. I'm up to new tag / colour suggestions to make this more powerful - so feel free to mail in ideas.
 
 Just as Mudlet and m&mf, the custom prompt was designed with speed in mind and optimized to the max. In practical tests, the speed of it is *very* fast - making it hard to measure because the difference on my laptop isn't too noticable. You can test for yourself though - the S: number bottom-right in Mudlet shows your system lag - how much time *all* your triggers took to process the last line. Hold the enter button down on a blank command line so all you'll be getting is a bunch of prompts, and watch the S: number change. Do that with and without the custom prompt, and you'll probably be convinced that it's fast.
-
-:note: yes, you can't set your power reserves at the moment - Lusternia doesn't give information about it. I'll add it as soon as it does.
 
 Here are some sample prompts for you to get ideas from. Feel free to share your custom prompt so I can add it here: ::
 
@@ -324,14 +328,35 @@ mmconfig options
 .. glossary::
   :sorted:
 
+  aeonfocus
+    specifies if afflictions being cured in slowcuring mode will be focused.
+
+  aeonprios
+  	sets a user definied slowcuring priority list optimized for aeon
+
+  adrenaline
+    Will cause athletics users to only use adrenaline for the quicksilver defense.
+
   allheale
     specifies whenever the system should make use of allheale to cure affs or not. Currently, it only makes use of it for blackout. You can disable this if you don't have any allheale potion so the system won't spam trying to use it.
 
   alwaysrockclimb
     specifies whenever the system should try to save power in combat by climbing normally if it can (and rock climbing only when there are things hindering you) or just outright always rock climbing. Hidden afflictions can slow down rock climbing if the system tries to normally climb first, so if those are an issue and power isn't, you can make the call.
 
+  arena
+    specifies if system should work as if you're in the arena or not.
+
   assumestats
     sets the % of health, mana, and ego which the system will assume you have when afflicted with blackout or recklessness (and thus your real stats are unknown).
+
+  attemptearlystun
+    Will attempt to start curing before stun wears off in slowcuring for more effective curing. Considers truetime defence.
+
+  autoarena
+  	turns on arena mode when entering an arena and turns it off upon exiting the arena 
+
+  autohide
+  	Automatically hides inactive skillsets and shows active skillsets on deflist (runs off gmcp.Char.Skills.Groups event)
 
   autorecharge
     specifies whenever the system should automatically recharge healing/protection scrolls after using them (make sure you have an energy cube with enough charges for this to work).
@@ -344,6 +369,9 @@ mmconfig options
 
   autowounds
    has the system automatically check your wounds after a specific number of warrior hits, so tracking is more accurate. Wounds checking is gagged when the system does it automatically, so that you aren't spammed. This is set at 3 by default for Healers and at 10 for non-Healers.
+
+  beastfocus
+    specifies if system should attempt to use beastfocus before regular focus. Will automatically turn off if beast isn't present and it's on.
 
   blindherb
     sets which herb the system should use to cure blindness. Can be faeleaf or myrtle (default is faeleaf).
@@ -393,14 +421,17 @@ mmconfig options
   faeleafid
     sets the pipe ID to use for the faeleaf pipe. Normally you wouldn't need to use this, as the system can auto-assign IDs from the *pipelist* command - but if you don't have it, you can use this option.
 
+  focus
+    Adds/Removes an affliction to the focus table. Afflictions in the table will always be focused.
+
   focusbody
-    lets the system know if you have the Focus Body skill in Discipline so it can use it to cure.
+    (Deprecated - turn it off) - lets the system know if you have the Focus Body skill in Discipline so it can use it to cure.
 
   focusmind
-    lets the system know if you have the Focus Mind skill. If you don't have it, the system will just make use of normal (herbs, salves, etc.) cures for mental afflictions.
+    (Deprecated - turn it off) - lets the system know if you have the Focus Mind skill. If you don't have it, the system will just make use of normal (herbs, salves, etc.) cures for mental afflictions.
 
   focusspirit
-    lets the system know if you have the Focus Spirit ability or whenever it should use it to cure.
+    (Deprecated - turn it off) - lets the system know if you have the Focus Spirit ability or whenever it should use it to cure.
 
   gagbreath
     toggles whenever the system should gag (hide) breating or not. It will completely gag it - commands to put it up will not be shown, and you holding breath and exhaling will be completely gagged as well - so you will see no extra spam, at all.
@@ -410,6 +441,9 @@ mmconfig options
 
   gagrelight
     toggles whenever the system should gag (hide) pipe relighting or not.
+
+  geniesall
+  	Will use the 'curio collection activate genies' command to put up all the genies, removing spam.
 
   gmcpvitals
   	sets m&mf to pull stats information from Char.Vitals - this means that it won't spam when deffing up locked in modules and will track balance/eq in blackout, among other things.
@@ -429,6 +463,9 @@ mmconfig options
   lag
     lets the system known if you're lagging or not - you want to use this option when you see the system double-doing command and wasting things too often. 0 is default, ie not lagging, and the number goes up to 3.
 
+  loadsap
+  	Will import your sapprios list upon being afflicted by sap and your aeonprios list upon curing sap.
+
   lustlist
     adds or removes a name to the lust list. See autoreject option on how will m&mf deal with the names on it.
 
@@ -447,6 +484,9 @@ mmconfig options
   parry
     lets the system know whenever you have parry or not so it can make use of it.
 
+  powerfocus
+    specifies if the system should use powerfocus when focusing on afflictions.
+
   preclot
     toggles whenever the system should preclot - that is, start clotting when you receive bleeding but before you take damage from bleeding. Doing so will save you from some bleeding damage, at the cost of a bigger willpower usage in the long term.
 
@@ -458,6 +498,9 @@ mmconfig options
 
   rockclimbing
     sets whenever you have the rockclimbing skill or not - if you do, the system will make use of it when normal climbing out of a pit can't work.
+
+  sapprios
+  	used to load a user definied slowcuring priority list optimized for sap curing
 
   screeleft
     (nekotai only) sets the poison to use for the screeleft defence.
@@ -542,6 +585,9 @@ mmconfig options
 
   warningtype
     can be either *all*, *prompt* or *none* (default is *all*). This is about instakill warnings - with all, then the warning will be prefixed on every line while it's in effect. With prompt, it will only be prefixed to prompt lines - and none will have it not prefix anything.
+
+  wonderall
+  	Will use the singular 'wondercorn activate all' to put up all the wondercorn defences, removing spam.
 
   ccto
     adjusts where do the :term:`cc alias <cc>` and the :ref:`mm.cc() <mm-cc-function>` function report information to. You can set it to a variety of different options:
@@ -720,6 +766,8 @@ m&m lost lock         aff lock    raised whenever you cure a particular afflicti
 m&m got def           defence     raised when you obtain a defence
 m&m lost def          defence     raised when you lose a defence
 m&m redirected aff    from, to    raised when an affliction is redirected to another one in Overhaul mode. For example, with paranoia in Overhaul mode, vertigo would be getting redirected to be paranoia
+m&m add skill 	      skillset    raised whenever you activate a previously inactive skillset. Useful for classflexing.
+m&m remove skill      skillset    raised whenever you inactivate or forget a previously active skillset. Useful for classflexing.
 ===================== =========== ============
 
 Scripting to do things on the prompt
@@ -1079,6 +1127,9 @@ Alias list
 
   mminstall
     starts the installation of the system.
+
+  mmdocs
+  	opens up the m&mf documentation in your browser
 
   mmsetup pc
     shows the current configuration of the herb precache system, for the current defences mode you're in. You can adjusts the amounts by clicking on + or - beside the herb.

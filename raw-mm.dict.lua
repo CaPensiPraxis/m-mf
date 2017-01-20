@@ -132,13 +132,15 @@ local dict_balanceless = {}
 local dict_cleanse = {}
 
 -- defence shortlists
-local dict_herb = {}
-local dict_purgative = {}
-local dict_balanceful_def = {}
+local dict_balanceful_def  = {}
 local dict_balanceless_def = {}
-local dict_misc_def = {}
-local dict_misc = {}
-local dict_sparkleaffs = {}
+local dict_herb            = {}
+local dict_misc            = {}
+local dict_misc_def        = {}
+local dict_purgative       = {}
+local dict_sparkleaffs     = {}
+local dict_wafer           = {}
+local dict_steam           = {}
 
 local codepaste = {}
 
@@ -243,6 +245,34 @@ codepaste.regen_head = function()
     not doingaction("curingconcussion"))
 end
 
+codepaste.ice_head = function()
+  return (not doingaction("curingdamagedskull") and not doingaction("curingdamagedthroat"))
+end
+
+codepaste.ice_chest = function()
+  return (not doingaction("curingcollapsedlungs") and not doingaction("curingcrushedchest"))
+end
+
+codepaste.ice_gut = function()
+  return (not doingaction("curingdamagedorgans") and not doingaction("curinginternalbleeding"))
+end
+
+codepaste.ice_leftarm = function()
+  return (not doingaction("curingdamagedleftarm") and not doingaction("curingmutilatedleftarm"))
+end
+
+codepaste.ice_rightarm = function()
+  return (not doingaction("curingdamagedrightarm") and not doingaction("curingmutilatedrightarm"))
+end
+
+codepaste.ice_leftleg = function()
+  return (not doingaction("curingdamagedleftleg") and not doingaction("curingmutilatedleftleg"))
+end
+
+codepaste.ice_rightleg = function()
+  return (not doingaction("curingdamagedrightleg") and not doingaction("curingmutilatedrightleg"))
+end
+
 codepaste.can_refill = function()
   return not ((affs.hemiplegyright and affs.hemiplegyleft) or affs.paralysis)
 end
@@ -306,6 +336,22 @@ codepaste.dowrithe = function(specific)
 #end
 end
 
+codepaste.wonderitems = function(which)
+  if conf.wonderall then
+    return (not doingaction("wondercornbal") and not doingaction("wondercorneq") and not doingaction("wondercornhp") and not doingaction("wondercornmp") and not doingaction("wondercornego") and not doingaction("wondercorndam") and not doingaction("wondercornres"))
+  else
+    return (not doingaction(which))
+  end
+end
+
+codepaste.geniedefs = function(which)
+  if conf.geniesall then
+    return (not doingaction("redgenies") and not doingaction("bluegenies") and not doingaction("yellowgenies"))
+  else
+    return (not doingaction(which))
+  end
+end
+
 codepaste.vessels_codepaste = function()
   return (not doingaction "onevessel" and not doingaction "twovessels" and not doingaction "threevessels" and not doingaction "fourvessels" and not doingaction "fivevessels" and not doingaction "sixvessels" and not doingaction "sevenvessels" and not doingaction "eightvessels" and not doingaction "ninevessels" and not doingaction "tenvessels" and not doingaction "elevenvessels" and not doingaction "twelvevessels" and not doingaction"thirteenplusvessels" and not actions.healhealth_herb and not actions.healmana_herb)
 end
@@ -327,11 +373,15 @@ codepaste.remove_allergies = function()
 end
 
 codepaste.remove_timewarps = function ()
-  removeaff {"minortimewarp", "moderatetimewarp", "majortimewarp", "massivetimewarp"}
+  removeaff({"minortimewarp", "moderatetimewarp", "majortimewarp", "massivetimewarp"})
+end
+
+codepaste.remove_aurawarps = function ()
+  removeaff({"completelyaurawarped","massivelyaurawarped","aurawarped","moderatelyaurawarped","slightlyaurawarped"})
 end
 
 codepaste.remove_burns = function()
-  removeaff {"firstdegreeburn", "seconddegreeburn", "thirddegreeburn", "fourthdegreeburn"}
+  removeaff({"firstdegreeburn", "seconddegreeburn", "thirddegreeburn", "fourthdegreeburn"})
 end
 
 codepaste.maestoso_ruined = function()
@@ -347,6 +397,10 @@ codepaste.insane_ruined = function()
   sk.lostbal_focus()
 end
 
+codepaste.reckstats = function()
+  return stats.currenthealth == stats.maxhealth and stats.currentmana == stats.maxmana and stats.currentego == stats.maxego and stats.currentpower == stats.maxpower
+end
+
 local wlevel = phpTable(
   {light    = 1},
   {medium   = 423},
@@ -354,12 +408,25 @@ local wlevel = phpTable(
   {critical = 3600}
 )
 
+local ice_wlevel = phpTable(
+  {light = 1},
+  {heavy = 35},
+  {critical = 75}
+)
+
 function sk.get_wound_level(amount)
   local name
-  for j,k in wlevel:pairs() do
-    if amount < k then break end
-    name = j
-  end
+    if not conf.oldwarrior then
+      for j, k in ice_wlevel:pairs() do
+        if amount < k then break end
+        name = j
+      end
+    else
+      for j,k in wlevel:pairs() do
+        if amount < k then break end
+        name = j
+      end
+    end
 
   return name or "light"
 end
@@ -373,8 +440,13 @@ for _,k in ipairs({"rightarm", "leftarm", "leftleg", "rightleg", "chest", "gut",
 end
 
 local function update_wound_count(k, amount)
-  dict["light" .. k].count, dict["medium" .. k].count, dict["heavy" .. k].count, dict["critical" .. k].count = amount, amount, amount, amount
-  removeaff{"light"..k, "medium"..k, "heavy"..k, "critical"..k}
+    if not conf.oldwarrior then
+      dict["light" .. k].count, dict["heavy" .. k].count, dict["critical" .. k].count = amount, amount, amount
+      removeaff{"light"..k, "heavy"..k, "critical"..k}
+    else
+      dict["light" .. k].count, dict["medium" .. k].count, dict["heavy" .. k].count, dict["critical" .. k].count = amount, amount, amount, amount
+      removeaff{"light"..k, "medium"..k, "heavy"..k, "critical"..k}
+    end
 end
 
 local partially_healed = {}
@@ -382,17 +454,62 @@ for _,k in ipairs({"rightarm", "leftarm", "leftleg", "rightleg", "chest", "gut",
   partially_healed[k] = function (type)
     local amount
 
-    if type == 'deepheal' then amount = math.random(1600, 2000)
+    if not conf.oldwarrior then
+      amount = 4
+    elseif type == 'deepheal' then amount = math.random(1600, 2000)
     elseif type == 'puer' then amount = math.random(800, 1000)
     elseif type == 'healspring' then amount = math.random(200, 300)
     else amount = math.random(800, 900) end
 
     if (dict["light"..k].count - amount) < 0 then amount = 0 else amount = dict["light"..k].count - amount end
 
-    dict["light" .. k].count, dict["medium" .. k].count, dict["heavy" .. k].count, dict["critical" .. k].count = amount, amount, amount, amount
-    removeaff{"light"..k, "medium"..k, "heavy"..k, "critical"..k}
+    if not conf.oldwarrior then
+      dict["light" .. k].count, dict["heavy" .. k].count, dict["critical" .. k].count = amount, amount, amount
+      removeaff{"light"..k, "heavy"..k, "critical"..k}
+    else
+      dict["light" .. k].count, dict["medium" .. k].count, dict["heavy" .. k].count, dict["critical" .. k].count = amount, amount, amount, amount
+      removeaff{"light"..k, "medium"..k, "heavy"..k, "critical"..k}
+    end
 
     addaff(dict[sk.get_wound_level(amount)..k])
+  end
+end
+
+function focus_aff(aff, cmd)
+
+  local t = {taintsick = "sickening", illuminated = "luminosity", hallucinating = "hallucinations"}
+  local c_aff = (t[aff] or aff)
+
+  if (sys.sync and conf.aeonfocus) or me.focus[aff] then
+    if conf.beastfocus and bals.beast and not affs.disloyalty then
+      if cmd == "dust" then
+        eat("dust", "beastfocus", c_aff)
+      else
+        send(cmd.." beastfocus "..c_aff, conf.commandecho)
+      end
+    elseif conf.powerfocus and stats.currentpower >= 1 then
+      if cmd == "dust" then
+        eat("dust", "powerfocus",c_aff)
+      else
+        send(cmd.." powerfocus "..c_aff, conf.commandecho)
+      end
+    else
+      if cmd == "dust" then
+        eat("dust", "focus",c_aff)
+      else
+        send(cmd.." focus "..c_aff, conf.commandecho)
+      end
+    end
+    return
+  end
+
+  if not me.focus[aff] then
+    if cmd == "dust" then
+      eat("dust")
+    else
+      send(cmd, conf.commandecho)
+    end
+    return
   end
 end
 
@@ -430,7 +547,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     scroll = {
@@ -797,7 +918,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -876,7 +1001,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -946,7 +1075,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1016,7 +1149,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1086,7 +1223,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1156,7 +1297,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1226,7 +1371,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1296,7 +1445,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1364,7 +1517,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1433,7 +1590,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1503,7 +1664,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1572,7 +1737,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1642,7 +1811,11 @@ dict = {
       sipcure = "health",
 
       onstart = function ()
-        send("sip health", conf.commandecho)
+        if conf.medicinebag and me.activeskills.stag then
+          send("touch medicinebag", conf.commandecho)
+        else
+          send("sip health", conf.commandecho)
+        end
       end
     },
     sparkle = {
@@ -1781,11 +1954,12 @@ dict = {
       spriority = 0,
 
       isadvisable = function ()
-        return (affs.aeon and codepaste.smoke_steam_pipe()) or false
+        return (affs.aeon and codepaste.smoke_steam_pipe() and not doingaction("aeon")) or false
       end,
 
       oncompleted = function ()
         removeaff("aeon")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
@@ -1798,6 +1972,34 @@ dict = {
         sk.lostbal_steam()
         empty.smoke_steam()
       end
+    },
+    physical = {
+      balanceful_act = true,
+      aspriority = 38,
+      spriority = 324,
+
+      isadvisable = function ()
+        return (affs.aeon and not affs.paralysis and not affs.severedspine and not doingaction("aeon") and mm.bals.balance and mm.bals.equilibrium and mm.me.activeskills.athletics) or false
+      end,
+
+      onstart = function ()
+        send("adrenaline", conf.commandecho)
+      end,
+
+      oncompleted = function ()
+        removeaff("aeon")
+      end,
+
+      already = function ()
+        removeaff("aeon")
+        defences.got("speed")
+      end,
+
+      quicksilver = function()
+        removeaff("aeon")
+        dict.quicksilver.misc.oncompleted()
+      end,
+
     },
     aff = {
       oncompleted = function ()
@@ -1963,18 +2165,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.healthleech and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("healthleech")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("healthleech", "smoke "..pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -2025,18 +2231,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.powersap and not doingaction "powersap") or false
       end,
 
       oncompleted = function ()
         removeaff("powersap")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("powersap", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -2285,18 +2495,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.disloyalty and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("disloyalty")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("disloyalty", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -2386,18 +2600,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.dysentery and not doingaction "dysentery") or false
       end,
 
       oncompleted = function ()
         removeaff("dysentery")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("dysentery", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -2447,18 +2665,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.vomiting and not doingaction "vomiting") or false
       end,
 
       oncompleted = function ()
         removeaff("vomiting")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("vomiting", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -2570,18 +2792,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.haemophilia and not doingaction "haemophilia") or false
       end,
 
       oncompleted = function ()
         removeaff("haemophilia")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("haemophilia", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -2605,7 +2831,7 @@ dict = {
       spriority = 57,
 
       isadvisable = function ()
-        return (affs.ablaze) or false
+        return (not conf.arena and affs.ablaze) or false
       end,
 
       oncompleted = function ()
@@ -2627,6 +2853,32 @@ dict = {
         sk.lostbal_purgative()
         removeaff("ablaze")
       end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (conf.arena and affs.ablaze) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+        removeaff("ablaze")
+      end,
+
+      noeffect = function()
+        removeaff("ablaze")
+        sk.lostbal_ice()
+      end,
+
+      nouse = function()
+        sk.lostbal_ice()
+      end,
+
+      onstart = function ()
+        send("apply ice to body", conf.commandecho)
+      end,
     },
     aff = {
       oncompleted = function ()
@@ -2848,13 +3100,12 @@ dict = {
   woundscheck = {
     autocheckcount = 0,
     physical = {
-      balanceful_act = true,
+      balanceful_act = false,
       aspriority = 63,
       spriority = 351,
 
       isadvisable = function ()
-        local bals = bals
-        return (bals.balance and bals.equilibrium and sys.manualwoundscheck and not doingaction("woundscheck") and not affs.inquisition) or false
+        return (sys.manualwoundscheck and not doingaction("woundscheck") and not affs.inquisition) or false
       end,
 
       oncompleted = function ()
@@ -3031,6 +3282,7 @@ dict = {
 #end
           and not doingaction("prone")
           and not affs.crippledrightleg and not affs.crippledleftleg
+          and not affs.damagedrightleg and not affs.damagedleftleg
           and not affs.unknowncrippledleg
           and not affs.mangledrightleg and not affs.mangledleftleg
           and not affs.missingrightleg and not affs.missingleftleg
@@ -3048,6 +3300,22 @@ dict = {
 
       oncompleted = function ()
         removeaff("prone")
+      end,
+
+      notprone = function ()
+        removeaff("prone")
+      end,
+
+      webbed = function ()
+        addaff(dict.tangle)
+      end,
+
+      roped = function ()
+        addaff(dict.roped)
+      end,
+
+      shackled = function ()
+        addaff(dict.shackled)
       end,
 
       onstart = function ()
@@ -3220,6 +3488,39 @@ dict = {
           send("light " .. pipes.faeleaf.id, false)
         else
           send("light " .. pipes.faeleaf.id, conf.commandecho) end
+      end
+    }
+  },
+  lightsteam = {
+    physical = {
+      aspriority = 4,
+      spriority = 4,
+      balanceless_act = true,
+      herb = "steam",
+
+      isadvisable = function ()
+        -- disabled, handled with lightpipes by the system - but left here in case of manual lighting
+        return false
+      end,
+
+      oncompleted = function ()
+        pipes.steam.lit = true
+        sk.forcelight_steam = false
+        lastlit("steam")
+      end,
+
+      all = function ()
+        for name, pipe in pairs(pipes) do
+          pipe.lit = true
+          sk["forcelight_"..name] = false
+        end
+      end,
+      
+      onstart = function ()
+        if conf.gagrelight then
+          send("light " .. pipes.steam.id, false)
+        else
+          send("light " .. pipes.steam.id, conf.commandecho) end
       end
     }
   },
@@ -3460,7 +3761,7 @@ dict = {
 #if skills.healing then
         not doingaction "usehealing" and
 #end
-        ((cnrl.lockdata["green a"]() and not doingaction "slickness") or (cnrl.lockdata["green b"]() and not doingaction "slickness") or (cnrl.lockdata["green c"]() and not doingaction "slickness") or (cnrl.lockdata["green d"]() and not doingaction "paralysis" and not doingaction "slitthroat") or cnrl.lockdata["slow"]())) or false
+        ((cnrl.lockdata["green a"]() and not doingaction "slickness") or (cnrl.lockdata["green b"]() and not doingaction "slickness") or (cnrl.lockdata["green c"]() and not doingaction "slickness") or cnrl.lockdata["slow"]())) or false
       end,
 
       oncompleted = function ()
@@ -3743,7 +4044,7 @@ dict = {
       spriority = 10,
 
       isadvisable = function ()
-        return (affs.bleeding and not doingaction("bleeding") and not affs.haemophilia and not affs.sleep and not affs.pinlegright and not affs.pinlegleft and not affs.pinlegunknown and not affs.pinlegunknown and can_usemana() and conf.clot and dict.bleeding.count >= conf.bleedamount and not affs.manabarbs) or false
+        return (affs.bleeding and not doingaction("bleeding") and not affs.haemophilia and not affs.sleep and not affs.pinlegright and not affs.pinlegleft and not affs.pinlegunknown and not affs.pinlegunknown and can_usemana() and conf.clot and dict.bleeding.count >= (conf.bleedamount or 60) and not affs.manabarbs and not doingaction("bruising")) or false
       end,
 
       -- by default, oncompleted means a clot went through okay
@@ -3757,11 +4058,14 @@ dict = {
       end,
 
       onstart = function ()
+        local needClot = math.floor(dict.bleeding.count/25)
+        local maxClot = math.floor((mm.stats.currentmana - (mm.stats.maxmana*(mm.conf.manause/100)))/60)
+        local toClot = math.min(needClot, maxClot)
         if conf.gagclot and not sys.sync then
-          send("clot", false)
+          send("clot "..toClot, false)
         else
-          send("clot", conf.commandecho) end
-      end
+          send("clot "..toClot, conf.commandecho) end
+        end
     },
     aff = {
       oncompleted = function (amount)
@@ -3774,6 +4078,50 @@ dict = {
       oncompleted = function ()
         removeaff("bleeding")
         dict.bleeding.count = 0
+      end,
+    }
+  },
+  bruising = {
+    count = 0,
+    misc = {
+      aspriority = 10,
+      spriority = 10,
+
+      isadvisable = function ()
+        return (affs.bruising and not doingaction("bruising") and not affs.haemophilia and not affs.sleep and not affs.pinlegright and not affs.pinlegleft and not affs.pinlegunknown and not affs.pinlegunknown and can_usemana() and conf.clot and dict.bruising.count >= (conf.bleedamount or 60) and not affs.manabarbs and not doingaction("bleeding")) or false
+      end,
+
+      -- by default, oncompleted means a clot went through okay
+      oncompleted = function ()
+      end,
+
+      -- oncured in this case means that we actually cured it; don't have any more bleeding
+      oncured = function ()
+        removeaff("bruising")
+        dict.bruising.count = 0
+      end,
+
+      onstart = function ()
+        local needClot = math.floor(dict.bruising.count/12)
+        local maxClot = math.floor((mm.stats.currentmana - (mm.stats.maxmana*(mm.conf.manause/100)))/60)
+        local toClot = math.min(needClot, maxClot)
+        if conf.gagclot and not sys.sync then
+          send("clot "..toClot, false)
+        else
+          send("clot "..toClot, conf.commandecho) end
+        end
+    },
+    aff = {
+      oncompleted = function (amount)
+        addaff(dict.bruising)
+        affs.bruising.p.count = amount or (affs.bruising.p.count + 200)
+        updateaffcount(dict.bruising)
+      end
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("bruising")
+        dict.bruising.count = 0
       end,
     }
   },
@@ -3807,18 +4155,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.scabies and not doingaction "scabies") or false
       end,
 
       oncompleted = function ()
         removeaff("scabies")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("scabies", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -3866,18 +4218,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.pox and not doingaction "pox") or false
       end,
 
       oncompleted = function ()
         removeaff("pox")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("pox", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -3938,6 +4294,7 @@ dict = {
       spriority = 28,
 
       isadvisable = function ()
+        --return (not conf.arena and affs.fourthdegreeburn) or false
         return (affs.fourthdegreeburn) or false
       end,
 
@@ -3964,6 +4321,38 @@ dict = {
         sk.lostbal_salve()
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        --return (conf.arena and affs.fourthdegreeburn) or false
+        return false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_salve()
+        removeaff("fourthdegreeburn")
+        addaff(dict.thirddegreeburn)
+      end,
+
+      noeffect = function ()
+        valid.ice_noeffect()
+      end,
+
+      nouse = function()
+        sk.lostbal_ice()
+      end,
+
+      onstart = function ()
+        send("apply ice to body", conf.commandecho)
+      end,
+
+
+      stillgot = function()
+        sk.lostbal_ice()
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_burns()
@@ -3982,7 +4371,8 @@ dict = {
       spriority = 27,
 
       isadvisable = function ()
-        return (affs.thirddegreeburn) or false
+        --return (not conf.arena and affs.thirddegreeburn) or false
+        return affs.thirddegreeburn or false
       end,
 
       oncompleted = function ()
@@ -4007,6 +4397,38 @@ dict = {
         sk.lostbal_salve()
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        --return (conf.arena and affs.thirddegreeburn) or false
+        return false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_salve()
+        removeaff("thirddegreeburn")
+        addaff(dict.seconddegreeburn)
+      end,
+
+      noeffect = function ()
+        valid.ice_noeffect()
+      end,
+
+      nouse = function()
+        sk.lostbal_ice()
+      end,
+
+      onstart = function ()
+        send("apply ice to body", conf.commandecho)
+      end,
+
+
+      stillgot = function()
+        sk.lostbal_ice()
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_burns()
@@ -4025,7 +4447,8 @@ dict = {
       spriority = 26,
 
       isadvisable = function ()
-        return (affs.seconddegreeburn) or false
+        --return (not conf.arena and affs.seconddegreeburn) or false
+        return affs.seconddegreeburn or false
       end,
 
       oncompleted = function ()
@@ -4050,6 +4473,38 @@ dict = {
         sk.lostbal_salve()
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        --return (conf.arena and affs.seconddegreeburn) or false
+        return false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_salve()
+        removeaff("seconddegreeburn")
+        addaff(dict.firstdegreeburn)
+      end,
+
+      noeffect = function ()
+        valid.ice_noeffect()
+      end,
+
+      nouse = function()
+        sk.lostbal_ice()
+      end,
+
+      onstart = function ()
+        send("apply ice to body", conf.commandecho)
+      end,
+
+
+      stillgot = function()
+        sk.lostbal_ice()
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_burns()
@@ -4068,7 +4523,8 @@ dict = {
       spriority = 25,
 
       isadvisable = function ()
-        return (affs.firstdegreeburn) or false
+        --return (not conf.arena and affs.firstdegreeburn) or false
+        return affs.firstdegreeburn or false
       end,
 
       oncompleted = function ()
@@ -4090,6 +4546,37 @@ dict = {
 
       stillgot = function()
         sk.lostbal_salve()
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        --return (conf.arena and affs.firstdegreeburn) or false
+        return false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_salve()
+        removeaff("firstdegreeburn")
+      end,
+
+      noeffect = function ()
+        valid.ice_noeffect()
+      end,
+
+      nouse = function()
+        sk.lostbal_ice()
+      end,
+
+      onstart = function ()
+        send("apply ice to body", conf.commandecho)
+      end,
+
+
+      stillgot = function()
+        sk.lostbal_ice()
       end
     },
     aff = {
@@ -4263,6 +4750,32 @@ dict = {
         empty.noeffect_melancholic_chest()
       end
     },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      focus = true,
+
+      isadvisable = function ()
+        return (affs.asthma and not doingaction "asthma") or false
+      end,
+
+      oncompleted = function ()
+        removeaff("asthma")
+        removeaff("unknownwafer")
+        sk.lostbal_wafer()
+      end,
+
+      eatcure = "dust",
+      onstart = function ()
+        focus_aff("asthma", "dust")
+        --eat("dust")
+      end,
+
+      empty = function()
+        empty.eat_wafer()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.asthma)
@@ -4322,7 +4835,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.crippledrightarm)
+        if conf.oldwarrior then
+          addaff(dict.crippledrightarm)
+        else
+          addaff(dict.damagedrightarm)
+        end
       end,
     },
     gone = {
@@ -4373,7 +4890,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.crippledleftarm)
+        if conf.oldwarrior then
+          addaff(dict.crippledleftarm)
+        else
+          addaff(dict.damagedleftarm)
+        end
       end,
     },
     gone = {
@@ -4634,7 +5155,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.crippledrightleg)
+        if conf.oldwarrior then
+          addaff(dict.crippledrightleg)
+        else
+          addaff(dict.damagedrightleg)
+        end
       end,
     },
     gone = {
@@ -4683,7 +5208,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.crippledleftleg)
+        if conf.oldwarrior then
+          addaff(dict.crippledleftleg)
+        else
+          addaff(dict.damagedleftleg)
+        end
       end,
     },
     gone = {
@@ -4723,8 +5252,12 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.missingleftarm)
-        signals.after_lifevision_processing:unblock(cnrl.checkwarning)
+        if conf.oldwarrior then
+          addaff(dict.missingleftarm)
+          signals.after_lifevision_processing:unblock(cnrl.checkwarning)
+        else
+          addaff(dict.mutilatedleftarm)
+        end
       end,
     },
     gone = {
@@ -4763,8 +5296,12 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.missingrightarm)
-        signals.after_lifevision_processing:unblock(cnrl.checkwarning)
+        if conf.oldwarrior then
+          addaff(dict.missingrightarm)
+          signals.after_lifevision_processing:unblock(cnrl.checkwarning)
+        else
+          addaff(dict.mutilatedrightarm)
+        end
       end,
     },
     gone = {
@@ -4803,7 +5340,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.mangledleftarm)
+        if conf.oldwarrior then
+          addaff(dict.mangledleftarm)
+        else
+          addaff(dict.mutilatedleftarm)
+        end
       end,
     },
     gone = {
@@ -4842,7 +5383,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.mangledrightarm)
+        if conf.oldwarrior then
+          addaff(dict.mangledrightarm)
+        else
+          addaff(dict.mutilatedrightarm)
+        end
       end,
     },
     gone = {
@@ -4974,8 +5519,12 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.missingleftleg)
-        removeaff("tendonleft")
+        if conf.oldwarrior then
+          addaff(dict.missingleftleg)
+          removeaff("tendonleft")
+        else
+          addaff(dict.mutilatedleftleg)
+        end
       end,
     },
     gone = {
@@ -5042,8 +5591,12 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.missingrightleg)
-        removeaff("tendonright")
+        if conf.oldwarrior then
+          addaff(dict.missingrightleg)
+          removeaff("tendonright")
+        else
+          addaff(dict.mutilatedrightleg)
+        end
       end,
     },
     gone = {
@@ -5110,7 +5663,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.mangledrightleg)
+        if conf.oldwarrior then
+          addaff(dict.mangledrightleg)
+        else
+          addaff(dict.mutilatedrightleg)
+        end
       end,
     },
     gone = {
@@ -5178,7 +5735,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.mangledleftleg)
+        if conf.oldwarrior then
+          addaff(dict.mangledleftleg)
+        else
+          addaff(dict.mutilatedleftleg)
+        end
       end,
     },
     gone = {
@@ -6125,11 +6686,11 @@ dict = {
       spriority = 128,
 
       isadvisable = function ()
-        return (affs.crushedchest and codepaste.regen_chest()
+        return false --[[(affs.crushedchest and codepaste.regen_chest()
 #if skills.healing then
         and not (actions.usehealing_misc and dict.usehealing.curingaff == "crushedchest")
 #end
-          ) or false
+          ) or false]]
       end,
 
       oncompleted = function ()
@@ -6147,6 +6708,40 @@ dict = {
         dict.crushedchest.salve.oncompleted()
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 17,
+
+      isadvisable = function ()
+        return (affs.crushedchest and codepaste.ice_chest()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("crushedchest")
+      end,
+
+      onstart = function ()
+        send("apply ice to chest", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingcrushedchest.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_chest()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.crushedchest)
@@ -6155,26 +6750,731 @@ dict = {
     gone = {
       oncompleted = function ()
         removeaff("crushedchest")
-        removeaff("paregenchest")
+        if not conf.oldwarrior then
+          removeaff("paregenchest")
+        end
       end,
     }
   },
   curingcrushedchest = {
     spriority = 0,
     waitingfor = {
-      customwait = 6,
+      customwait = 5,
 
       oncompleted = function ()
         removeaff("crushedchest")
-        removeaff("paregenchest")
-        --~ addaff(dict.puncturedlung)
+        if not conf.oldwarrior then
+          removeaff("paregenchest")
+          addaff(dict.puncturedlung)
+        end
       end,
 
       onstart = function ()
         if not conf.aillusion then return end
-        tempTimer(3, function ()
           enableTrigger("m&m cure crushedchest")
-        end)
+      end
+    }
+  },
+  damagedskull = {
+    ice = {
+      aspriority = 0,
+      spriority = 27,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.damagedskull and codepaste.ice_head()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+        removeaff("damagedskull")
+      end,
+
+      onstart = function ()
+        send("apply ice to head", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingdamagedskull.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_head()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedskull)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedskull")
+      end,
+    }
+  },
+  curingdamagedskull = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedskull")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  damagedthroat = {
+    ice = {
+      aspriority = 0,
+      spriority = 35,
+
+      isadvisable = function ()
+        return (affs.damagedthroat and codepaste.ice_head()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+        removeaff("damagedthroat")
+      end,
+
+      onstart = function ()
+        send("apply ice to head", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+        doaction(dict.curingdamagedthroat.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_head()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedthroat)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedthroat")
+      end,
+    }
+  },
+  curingdamagedthroat = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedthroat")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  damagedorgans = {
+    ice = {
+      aspriority = 0,
+      spriority = 16,
+
+      isadvisable = function ()
+        return (affs.damagedorgans and codepaste.ice_gut()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("damagedorgans")
+      end,
+
+      onstart = function ()
+        send("apply ice to gut", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingdamagedorgans.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_gut()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedorgans)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedorgans")
+      end,
+    }
+  },
+  curingdamagedorgans = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedorgans")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  internalbleeding = {
+    ice = {
+      aspriority = 0,
+      spriority = 15,
+
+      isadvisable = function ()
+        return (affs.internalbleeding and codepaste.ice_gut()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("internalbleeding")
+      end,
+
+      onstart = function ()
+        send("apply ice to gut", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curinginternalbleeding.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_gut()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.internalbleeding)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("internalbleeding")
+      end,
+    }
+  },
+  curinginternalbleeding = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("internalbleeding")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  damagedleftarm = {
+    ice = {
+      aspriority = 0,
+      spriority = 20,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.damagedleftarm and codepaste.ice_leftarm()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("damagedleftarm")
+      end,
+
+      onstart = function ()
+        send("apply ice to larm", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingdamagedleftarm.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_leftarm()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedleftarm)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedleftarm")
+      end,
+    }
+  },
+  curingdamagedleftarm = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedleftarm")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  mutilatedleftarm = {
+    ice = {
+      aspriority = 0,
+      spriority = 24,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.mutilatedleftarm and codepaste.ice_leftarm()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("mutilatedleftarm")
+      end,
+
+      onstart = function ()
+        send("apply ice to larm", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingmutilatedleftarm.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_leftarm()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.mutilatedleftarm)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("mutilatedleftarm")
+      end,
+    }
+  },
+  curingmutilatedleftarm = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("mutilatedleftarm")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  damagedrightarm = {
+    ice = {
+      aspriority = 0,
+      spriority = 19,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.damagedrightarm and codepaste.ice_rightarm()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("damagedrightarm")
+      end,
+
+      onstart = function ()
+        send("apply ice to rarm", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingdamagedrightarm.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_rightarm()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedrightarm)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedrightarm")
+      end,
+    }
+  },
+  curingdamagedrightarm = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedrightarm")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  mutilatedrightarm = {
+    ice = {
+      aspriority = 0,
+      spriority = 23,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.mutilatedrightarm and codepaste.ice_rightarm()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("mutilatedrightarm")
+      end,
+
+      onstart = function ()
+        send("apply ice to rarm", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingmutilatedrightarm.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_rightarm()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.mutilatedrightarm)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("mutilatedrightarm")
+      end,
+    }
+  },
+  curingmutilatedrightarm = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("mutilatedrightarm")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  damagedleftleg = {
+    ice = {
+      aspriority = 0,
+      spriority = 22,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.damagedleftleg and codepaste.ice_leftleg()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("damagedleftleg")
+      end,
+
+      onstart = function ()
+        send("apply ice to lleg", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingdamagedleftleg.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_leftleg()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedleftleg)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedleftleg")
+      end,
+    }
+  },
+  curingdamagedleftleg = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedleftleg")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  mutilatedleftleg = {
+    ice = {
+      aspriority = 0,
+      spriority = 26,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.mutilatedleftleg and codepaste.ice_leftleg()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("mutilatedleftleg")
+      end,
+
+      onstart = function ()
+        send("apply ice to lleg", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingmutilatedleftleg.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_leftleg()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.mutilatedleftleg)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("mutilatedleftleg")
+      end,
+    }
+  },
+  curingmutilatedleftleg = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("mutilatedleftleg")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  damagedrightleg = {
+    ice = {
+      aspriority = 0,
+      spriority = 21,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.damagedrightleg and codepaste.ice_rightleg()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+        removeaff("damagedrightleg")
+      end,
+
+      onstart = function ()
+        send("apply ice to rleg", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+        doaction(dict.curingdamagedrightleg.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_rightleg()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.damagedrightleg)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("damagedrightleg")
+      end,
+    }
+  },
+  curingdamagedrightleg = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("damagedrightleg")
+      end,
+
+      onstart = function ()
+      end
+    }
+  },
+  mutilatedrightleg = {
+    ice = {
+      aspriority = 0,
+      spriority = 25,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.mutilatedrightleg and codepaste.ice_rightleg()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("mutilatedrightleg")
+      end,
+
+      onstart = function ()
+        send("apply ice to rleg", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingmutilatedrightleg.waitingfor)
+      end,
+
+      noeffect = function()
+        sk.lostbal_ice()
+        empty.noeffect_ice_rightleg()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.mutilatedrightleg)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("mutilatedrightleg")
+      end,
+    }
+  },
+  curingmutilatedrightleg = {
+    spriority = 0,
+    waitingfor = {
+      customwait = 5,
+
+      oncompleted = function ()
+        removeaff("mutilatedrightleg")
+      end,
+
+      onstart = function ()
       end
     }
   },
@@ -6239,11 +7539,11 @@ dict = {
       spriority = 108,
 
       isadvisable = function ()
-        return (affs.collapsedlungs and codepaste.regen_chest()
+        return --[[(affs.collapsedlungs and codepaste.regen_chest()
 #if skills.healing then
         and not (actions.usehealing_misc and dict.usehealing.curingaff == "collapsedlungs")
 #end
-          ) or false
+          ) or]] false
       end,
 
       oncompleted = function ()
@@ -6261,6 +7561,39 @@ dict = {
         dict.collapsedlungs.salve.oncompleted()
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 18,
+
+      isadvisable = function ()
+        return (affs.collapsedlungs and codepaste.ice_chest()) or false
+      end,
+
+      oncompleted = function ()
+        sk.lostbal_ice()
+
+        removeaff("collapsedlungs")
+      end,
+
+      onstart = function ()
+        send("apply ice to chest", conf.commandecho)
+      end,
+
+      -- we get no msg from an application of this
+      empty = function ()
+        sk.lostbal_ice()
+
+        doaction(dict.curingcollapsedlungs.waitingfor)
+      end,
+
+      noeffect = function()
+        empty.noeffect_ice_chest()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.collapsedlungs)
@@ -6270,31 +7603,34 @@ dict = {
     gone = {
       oncompleted = function ()
         removeaff("collapsedlungs")
-        removeaff("paregenchest")
+        if not conf.oldwarrior then
+          removeaff("paregenchest")
+        end
       end,
     }
   },
   curingcollapsedlungs = {
     spriority = 0,
     waitingfor = {
-      customwait = 6, -- real is 4
+      customwait = 3, -- real is 4
 
       ontimeout = function()
         removeaff("collapsedlungs")
-        removeaff("paregenchest")
+        if not conf.oldwarrior then
+          removeaff("paregenchest")
+        end
       end,
 
       oncompleted = function ()
         removeaff("collapsedlungs")
-        removeaff("paregenchest")
-        addaff(dict.puncturedlung)
+        if not conf.oldwarrior then
+          removeaff("paregenchest")
+        end
       end,
 
       onstart = function ()
         if not conf.aillusion then return end
-        tempTimer(3, function ()
-          enableTrigger("m&m cure collapsedlungs")
-        end)
+        enableTrigger("m&m cure collapsedlungs")
       end
     }
   },
@@ -6844,6 +8180,29 @@ dict = {
         empty.eat_yarrow()
       end
     },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.clotleftshoulder) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("clotleftshoulder")
+        removeaff("unknownwafer")
+        sk.lostbal_wafer()
+      end,
+
+      eatcure = "wafer",
+      onstart = function ()
+        eat("wafer")
+      end,
+
+      empty = function()
+        empty.eat_wafer()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.clotleftshoulder)
@@ -6876,6 +8235,29 @@ dict = {
 
       empty = function()
         empty.eat_yarrow()
+      end
+    },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.clotrightshoulder) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("clotrightshoulder")
+        removeaff("unknownwafer")
+        sk.lostbal_wafer()
+      end,
+
+      eatcure = "wafer",
+      onstart = function ()
+        eat("wafer")
+      end,
+
+      empty = function()
+        empty.eat_wafer()
       end
     },
     aff = {
@@ -6912,6 +8294,29 @@ dict = {
         empty.eat_yarrow()
       end
     },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.clotrighthip) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("clotrighthip")
+        removeaff("unknownwafer")
+        sk.lostbal_wafer()
+      end,
+
+      eatcure = "wafer",
+      onstart = function ()
+        eat("wafer")
+      end,
+
+      empty = function()
+        empty.eat_wafer()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.clotrighthip)
@@ -6944,6 +8349,29 @@ dict = {
 
       empty = function()
         empty.eat_yarrow()
+      end
+    },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.clotlefthip) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("clotlefthip")
+        removeaff("unknownwafer")
+        sk.lostbal_wafer()
+      end,
+
+      eatcure = "wafer",
+      onstart = function ()
+        eat("wafer")
+      end,
+
+      empty = function()
+        empty.eat_wafer()
       end
     },
     aff = {
@@ -7446,18 +8874,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.rigormortis and not doingaction "rigormortis") or false
       end,
 
       oncompleted = function ()
         removeaff("rigormortis")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("rigormortis", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -8304,17 +9736,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.clumsiness and not doingaction("clumsiness")) or false
       end,
 
       oncompleted = function ()
         removeaff("clumsiness")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("clumsiness", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -8343,6 +9779,7 @@ dict = {
 
       oncompleted = function ()
         removeaff("slickness")
+        removeaff("unknownsteam")
         sk.lostbal_herb()
       end,
 
@@ -8374,6 +9811,32 @@ dict = {
       cleanse = true,
       onstart = function ()
         rub_cleanse()
+      end
+    },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      focus = true,
+
+      isadvisable = function ()
+        return (affs.slickness and not doingaction("slickness")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("slickness")
+        sk.lostbal_steam()
+      end,
+
+      smokecure = "steam",
+      onstart = function ()
+        focus_aff("slickness", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
       end
     },
     aff = {
@@ -8469,17 +9932,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.confusion and not doingaction("confusion")) or false
       end,
 
       oncompleted = function ()
         removeaff("confusion")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("confusion", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -8672,17 +10139,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.hallucinating and not doingaction("hallucinating")) or false
       end,
 
       oncompleted = function ()
         removeaff("hallucinating")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("hallucinating", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -8753,17 +10224,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.paranoia and not doingaction("paranoia")) or false
       end,
 
       oncompleted = function ()
         removeaff("paranoia")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("paranoia", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -9061,6 +10536,73 @@ dict = {
         empty.eat_earwort()
       end
     },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        --[[return (affs.attraction and not affs.earache and
+          not doingaction("attraction") and not dict.attraction.eaten) or false]]
+          return false
+      end,
+
+      oncompleted = function ()
+        dict.attraction.eaten = true
+        sk.lostbal_wafer()
+        signals.newroom:unblock(sk.check_attraction)
+      end,
+
+      earache = function ()
+        sk.lostbal_wafer()
+        if not affs.earache then addaff(dict.earache) end
+      end,
+
+      woreoff = function()
+        removeaff("attraction")
+      end,
+
+      eatcure = "earwort",
+      onstart = function ()
+        eat("earwort")
+      end,
+
+      empty = function()
+        empty["eat_earwort"]()
+      end
+    },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.attraction and not affs.earache and codepaste.smoke_steam_pipe() and not doingaction("attraction") and not dict.attraction.eaten) or false
+      end,
+
+      oncompleted = function (def)
+        dict.attraction.eaten = true
+        sk.lostbal_steam()
+        signals.newroom:unblock(sk.check_attraction)
+      end,
+
+      earache = function ()
+        sk.lostbal_steam()
+        if not affs.earache then addaff(dict.earache) end
+      end,
+
+      woreoff = function()
+        removeaff("attraction")
+      end,
+
+      eatcure = "earwort",
+      onstart = function ()
+        eat("earwort")
+      end,
+
+      empty = function()
+        empty.smoke_steam()
+        sk.lostbal_steam()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.attraction)
@@ -9185,6 +10727,32 @@ dict = {
         empty.focus_mind()
       end
     },
+    lucidity = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.massiveinsanity and
+          not doingaction("massiveinsanity")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("massiveinsanity")
+        addaff(dict.majorinsanity)
+        removeaff("unknownlucidity")
+        sk.lostbal_lucidity()
+      end,
+
+      onstart = function ()
+        send("sip lucidity tempinsanity", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_lucidity()
+        empty.sip_lucidity()
+
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_insanities()
@@ -9248,6 +10816,32 @@ dict = {
         empty.focus_mind()
       end
     },
+    lucidity = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.majorinsanity and
+          not doingaction("majorinsanity")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("majorinsanity")
+        addaff(dict.moderateinsanity)
+        removeaff("unknownlucidity")
+        sk.lostbal_lucidity()
+      end,
+
+      onstart = function ()
+        send("sip lucidity tempinsanity", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_lucidity()
+        empty.sip_lucidity()
+
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_insanities()
@@ -9308,7 +10902,32 @@ dict = {
       empty = function ()
         sk.lostbal_focus()
 
-        empty.focus_mind()
+      end
+    },
+    lucidity = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.moderateinsanity and
+          not doingaction("moderateinsanity")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("moderateinsanity")
+        addaff(dict.slightinsanity)
+        removeaff("unknownlucidity")
+        sk.lostbal_lucidity()
+      end,
+
+      onstart = function ()
+        send("sip lucidity tempinsanity", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_lucidity()
+
+        empty.sip_lucidity()
       end
     },
     aff = {
@@ -9370,6 +10989,31 @@ dict = {
         sk.lostbal_focus()
 
         empty.focus_mind()
+      end
+    },
+    lucidity = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.slightinsanity and
+          not doingaction("slightinsanity")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("slightinsanity")
+        removeaff("unknownlucidity")
+        sk.lostbal_lucidity()
+      end,
+
+      onstart = function ()
+        send("sip lucidity", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_lucidity()
+        empty.sip_lucidity()
+
       end
     },
     aff = {
@@ -9434,7 +11078,11 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.fracturedskull)
+        if conf.oldwarrior then
+          addaff(dict.fracturedskull)
+        else
+          addaff(dict.damagedskull)
+        end
       end,
     },
     gone = {
@@ -9546,8 +11194,10 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        dict.unknowncrippledarm.count = dict.unknowncrippledarm.count + 1
-        addaff(dict.unknowncrippledarm)
+        if conf.oldwarrior then
+          dict.unknowncrippledarm.count = dict.unknowncrippledarm.count + 1
+          addaff(dict.unknowncrippledarm)
+        end
       end,
     },
     gone = {
@@ -9593,8 +11243,10 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        dict.unknowncrippledleg.count = dict.unknowncrippledleg.count + 1
-        addaff(dict.unknowncrippledleg)
+        if conf.oldwarrior then
+          dict.unknowncrippledleg.count = dict.unknowncrippledleg.count + 1
+          addaff(dict.unknowncrippledleg)
+        end
       end,
     },
     gone = {
@@ -9626,9 +11278,9 @@ dict = {
     aff = {
       oncompleted = function (number)
 
-        if (dict.unknownany.reckhp and stats.currenthealth == stats.maxhealth) or
-          (dict.unknownany.reckmana and stats.currentmana == stats.maxmana) or
-          (dict.unknownany.reckego and stats.currentego == stats.maxego) then
+        if (dict.unknownany.reckhp and codepaste.reckstats()) or
+          (dict.unknownany.reckmana and codepaste.reckstats()) or
+          (dict.unknownany.reckego and codepaste.reckstats()) then
             addaff(dict.recklessness)
 
             if number and number > 1 then
@@ -9655,6 +11307,95 @@ dict = {
         dict.unknownany.count = 0
       end,
     }
+  },
+  unknownlucidity = {
+    lucidity = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function()
+        return (affs.unknownlucidity) or false
+      end,
+
+      oncompleted = function ()
+        if not affs.unknownlucidity then return end
+        removeaff("unknownlucidity")
+        sk.lostbal_lucidity()
+      end,
+
+      onstart = function()
+        send("sip lucidity", conf.commandecho)
+      end,
+
+      empty = function()
+        empty.sip_lucidity()
+      end,
+    },
+    aff = {
+      oncompleted = function()
+        addaff(dict.unknownlucidity)
+      end,
+    },
+  },
+  unknownsteam = {
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function()
+        return (affs.unknownsteam) or false
+      end,
+
+      oncompleted = function ()
+        if not affs.unknownsteam then return end
+        removeaff("unknownsteam")
+        sk.lostbal_steam()
+      end,
+
+      smokecure = "steam",
+      onstart = function ()
+        send("smoke " .. pipes.steam.id, conf.commandecho)
+      end,
+
+      empty = function()
+        empty.smoke_steam()
+      end,
+    },
+    aff = {
+      oncompleted = function()
+        addaff(dict.unknownsteam)
+      end,
+    },
+  },
+  unknownwafer = {
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function()
+        return (affs.unknownwafer) or false
+      end,
+
+      oncompleted = function ()
+        if not affs.unknownwafer then return end
+        removeaff("unknownwafer")
+        sk.lostbal_wafer()
+      end,
+      
+      eatcure = "dust",
+      onstart = function ()
+        eat("dust")
+      end,
+
+      empty = function()
+        empty.eat_wafer()
+      end,
+    },
+    aff = {
+      oncompleted = function()
+        addaff(dict.unknownwafer)
+      end,
+    },
   },
   unknownmental = {
     count = 0,
@@ -9956,18 +11697,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.pacifism and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("pacifism")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("pacifism", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -10071,7 +11816,7 @@ dict = {
       spriority = 79,
 
       isadvisable = function ()
-        return (affs.succumb and not doingaction "succumb") or false
+        return false
       end,
 
       oncompleted = function ()
@@ -10088,25 +11833,81 @@ dict = {
         dict.succumb.herb.oncompleted()
       end
     },
+    waitingfor = {
+      customwait = 10,
+
+      isadvisable = function ()
+        return false
+      end,
+
+      onstart = function () end,
+
+      oncompleted = function ()
+        removeaff("succumb")
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.succumb)
+        doaction(dict.succumb.waitingfor)
       end,
     },
     gone = {
       oncompleted = function ()
         removeaff("succumb")
       end,
-    },
+    }
+  },
+  anesthesia = {
     waitingfor = {
-      customwait = 6,
+      customwait = 15,
 
-      oncompleted = function ()
-        removeaff("succumb")
+      isadvisable = function ()
+        return false
       end,
 
-      onstart = function ()
+      onstart = function () end,
+
+      oncompleted = function ()
+        removeaff("anesthesia")
       end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.anesthesia)
+        doaction(dict.anesthesia.waitingfor)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("anesthesia")
+      end,
+    }
+  },
+  bentaura = {
+    waitingfor = {
+      customwait = 150,
+
+      isadvisable = function ()
+        return false
+      end,
+
+      onstart = function () end,
+
+      oncompleted = function ()
+        removeaff("bentaura")
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.bentaura)
+        doaction(dict.bentaura.waitingfor)
+      end,
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("bentaura")
+      end,
     }
   },
   peace = {
@@ -10519,17 +12320,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.addiction and not doingaction("addiction")) or false
       end,
 
       oncompleted = function ()
         removeaff("addiction")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("addiction", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -10608,17 +12413,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.epilepsy and not doingaction("epilepsy")) or false
       end,
 
       oncompleted = function ()
         removeaff("epilepsy")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("addiction", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -10750,6 +12559,7 @@ dict = {
 
       oncompleted = function ()
         removeaff("achromaticaura")
+        removeaff("unknownsteam")
         sk.lostbal_herb()
       end,
 
@@ -10771,6 +12581,8 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.achromaticaura and not affs.maestoso and codepaste.smoke_steam_pipe()) or false
       end,
@@ -10782,7 +12594,8 @@ dict = {
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("achromaticaura", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -10834,18 +12647,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.powerspikes and (not affs.maestoso or (defc.truedeaf or affs.deaf)) and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("powerspikes")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("powerspikes", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -10920,18 +12737,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.manabarbs and not affs.maestoso and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("manabarbs")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("manabarbs", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -11006,18 +12827,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.egovice and not affs.maestoso and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("egovice")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("egovice", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -11155,17 +12980,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.recklessness and not doingaction("recklessness")) or false
       end,
 
       oncompleted = function ()
         removeaff("recklessness")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("recklessness", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -11234,17 +13063,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.stupidity and not doingaction("stupidity")) or false
       end,
 
       oncompleted = function ()
         removeaff("stupidity")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("stupidity", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -11574,7 +13407,7 @@ dict = {
         if (affs.crushedwindpipe and
             ((codepaste.smoke_myrtle_pipe() and not affs.asthma and not affs.collapsedlungs and not affs.pinlegright and not affs.pinlegleft and not affs.pinlegunknown and not affs.pinlegunknown) -- we can either smoke it, or...
           or
-            (not affs.slitthroat and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.darkfate))  -- ...eat it
+            (not affs.slickness))  -- ...eat it
           ) then
         return true
       else
@@ -11927,6 +13760,31 @@ dict = {
         empty.focus_mind()
       end
     },
+    lucidity = {
+      aspriority = 0,
+      spriority = 0,
+
+      focus = true,
+
+      isadvisable = function ()
+        return (affs.anorexia and not doingaction("anorexia")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("anorexia")
+        removeaff("unknownlucidity")
+        sk.lostbal_lucidity()
+      end,
+
+      onstart = function ()
+        focus_aff("anorexia", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
+      end,
+
+      empty = function()
+        empty.sip_lucidity()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.anorexia)
@@ -12067,6 +13925,62 @@ dict = {
         empty["eat_"..conf.deafherb]()
       end
     },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        --[[return (affs.deaf and not defc.truedeaf and not doingaction "deaf" and not affs.earache) or false]]
+        return false
+      end,
+
+      oncompleted = function ()
+        removeaff("deaf")
+        sk.lostbal_wafer()
+      end,
+
+      earache = function ()
+        sk.lostbal_wafer()
+        if not affs.earache then addaff(dict.earache) end
+      end,
+
+      eatcure = "earwort",
+      onstart = function ()
+        eat("earwort")
+      end,
+
+      empty = function()
+        empty["eat_earwort"]()
+      end
+    },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.deaf and not affs.earache and codepaste.smoke_steam_pipe() and not defc.truedeaf and not doingaction("deaf")) or false
+      end,
+
+      oncompleted = function (def)
+        removeaff("deaf")
+        sk.lostbal_steam()
+      end,
+
+      earache = function ()
+        sk.lostbal_steam()
+        if not affs.earache then addaff(dict.earache) end
+      end,
+
+      eatcure = "earwort",
+      onstart = function ()
+        eat("earwort")
+      end,
+
+      empty = function()
+        empty.smoke_steam()
+        sk.lostbal_steam()
+      end
+    },
     aff = {
       oncompleted = function ()
         addaff(dict.deaf)
@@ -12109,6 +14023,40 @@ dict = {
 
       empty = function()
         empty["eat_"..conf.blindherb]()
+      end
+    },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+      -- took out and not doingaction "waitingontrueblind", so there isn't a short time between you getting trueblind up
+        return (affs.blind and not doingaction "blind" and not defc.trueblind and not affs.afterimage and not (affs.eyepeckleft and affs.eyepeckright)) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("blind")
+        sk.lostbal_wafer()
+      end,
+
+      gettingtrueblind = function ()
+        removeaff("blind")
+        doaction(dict.waitingontrueblind.waitingfor)
+        sk.lostbal_wafer()
+      end,
+
+      afterimage = function ()
+        sk.lostbal_wafer()
+        addaff (dict.afterimage)
+      end,
+
+      eatcure = "faeleaf",
+      onstart = function ()
+        eat("faeleaf")
+      end,
+
+      empty = function()
+        empty["eat_faeleaf"]()
       end
     },
     aff = {
@@ -12171,17 +14119,21 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.sensitivity and not doingaction("sensitivity")) or false
       end,
 
       oncompleted = function ()
         removeaff("sensitivity")
+        removeaff("unknownlucidity")
         sk.lostbal_lucidity()
       end,
 
       onstart = function ()
-        send("sip lucidity", conf.commandecho)
+        focus_aff("sensitivity", "sip lucidity")
+        --send("sip lucidity", conf.commandecho)
       end,
 
       empty = function()
@@ -12207,7 +14159,7 @@ dict = {
       spriority = 374,
 
       isadvisable = function ()
-        return (affs.criticalchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12242,6 +14194,49 @@ dict = {
 
       onstart = function ()
         send("apply health to chest", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 31,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalchest")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.chest()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "chest" then
+          dict.grapple.ninshi = "chest" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.chest()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.chest()
+      end,
+
+      onstart = function ()
+        send("apply ice to chest wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -12267,7 +14262,7 @@ dict = {
       spriority = 367,
 
       isadvisable = function ()
-        return (affs.heavychest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavychest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12304,6 +14299,49 @@ dict = {
         send("apply health to chest", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 11,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavychest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavychest")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.chest()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "chest" then
+          dict.grapple.ninshi = "chest" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.chest()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.chest()
+      end,
+
+      onstart = function ()
+        send("apply ice to chest wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -12327,7 +14365,7 @@ dict = {
       spriority = 360,
 
       isadvisable = function ()
-        return (affs.mediumchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12387,7 +14425,7 @@ dict = {
       spriority = 353,
 
       isadvisable = function ()
-        return (affs.lightchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lightchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12424,6 +14462,49 @@ dict = {
         send("apply health to chest", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 4,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lightchest and dict.grapple.ninshilimb ~= "chest" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lightchest")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.chest()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "chest" then
+          dict.grapple.ninshi = "chest" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.chest()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.chest()
+      end,
+
+      onstart = function ()
+        send("apply ice to chest wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -12447,7 +14528,7 @@ dict = {
       spriority = 375,
 
       isadvisable = function ()
-        return (affs.criticalgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12482,6 +14563,49 @@ dict = {
 
       onstart = function ()
         send("apply health to gut", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 30,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalgut")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.gut()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "gut" then
+          dict.grapple.ninshi = "gut" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.gut()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.gut()
+      end,
+
+      onstart = function ()
+        send("apply ice to gut wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -12507,7 +14631,7 @@ dict = {
       spriority = 368,
 
       isadvisable = function ()
-        return (affs.heavygut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavygut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12544,6 +14668,49 @@ dict = {
         send("apply health to gut", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 10,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavygut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavygut")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.gut()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "gut" then
+          dict.grapple.ninshi = "gut" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.gut()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.gut()
+      end,
+
+      onstart = function ()
+        send("apply ice to gut wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -12567,7 +14734,7 @@ dict = {
       spriority = 361,
 
       isadvisable = function ()
-        return (affs.mediumgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12627,7 +14794,7 @@ dict = {
       spriority = 354,
 
       isadvisable = function ()
-        return (affs.lightgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lightgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12664,6 +14831,49 @@ dict = {
         send("apply health to gut", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 3,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lightgut and dict.grapple.ninshilimb ~= "gut" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lightgut")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.gut()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "gut" then
+          dict.grapple.ninshi = "gut" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.gut()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.gut()
+      end,
+
+      onstart = function ()
+        send("apply ice to gut wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -12687,7 +14897,7 @@ dict = {
       spriority = 376,
 
       isadvisable = function ()
-        return (affs.criticalrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12722,6 +14932,49 @@ dict = {
 
       onstart = function ()
         send("apply health to arms", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 28,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalrightarm")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.rightarm()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "rightarm" then
+          dict.grapple.ninshi = "rightarm" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.rightarm()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.rightarm()
+      end,
+
+      onstart = function ()
+        send("apply ice to rarm wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -12747,7 +15000,7 @@ dict = {
       spriority = 369,
 
       isadvisable = function ()
-        return (affs.heavyrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavyrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12784,6 +15037,49 @@ dict = {
         send("apply health to arms", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 8,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavyrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavyrightarm")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.rightarm()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "rightarm" then
+          dict.grapple.ninshi = "rightarm" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.rightarm()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.rightarm()
+      end,
+
+      onstart = function ()
+        send("apply ice to rarm wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -12807,7 +15103,7 @@ dict = {
       spriority = 362,
 
       isadvisable = function ()
-        return (affs.mediumrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12867,7 +15163,7 @@ dict = {
       spriority = 355,
 
       isadvisable = function ()
-        return (affs.lightrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lightrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12904,6 +15200,49 @@ dict = {
         send("apply health to arms", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 1,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lightrightarm and dict.grapple.ninshilimb ~= "rightarm" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lightrightarm")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.rightarm()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "rightarm" then
+          dict.grapple.ninshi = "rightarm" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.rightarm()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.rightarm()
+      end,
+
+      onstart = function ()
+        send("apply ice to rarm wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -12927,7 +15266,7 @@ dict = {
       spriority = 377,
 
       isadvisable = function ()
-        return (affs.criticalleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -12962,6 +15301,49 @@ dict = {
 
       onstart = function ()
         send("apply health to arms", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 29,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalleftarm")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.leftarm()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "leftarm" then
+          dict.grapple.ninshi = "leftarm" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.leftarm()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.leftarm()
+      end,
+
+      onstart = function ()
+        send("apply ice to larm wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -12987,7 +15369,7 @@ dict = {
       spriority = 370,
 
       isadvisable = function ()
-        return (affs.heavyleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavyleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13024,6 +15406,49 @@ dict = {
         send("apply health to arms", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 9,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavyleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavyleftarm")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.leftarm()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "leftarm" then
+          dict.grapple.ninshi = "leftarm" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.leftarm()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.leftarm()
+      end,
+
+      onstart = function ()
+        send("apply ice to larm wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13047,7 +15472,7 @@ dict = {
       spriority = 363,
 
       isadvisable = function ()
-        return (affs.mediumleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13107,7 +15532,7 @@ dict = {
       spriority = 356,
 
       isadvisable = function ()
-        return (affs.lightleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lightleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13144,6 +15569,49 @@ dict = {
         send("apply health to arms", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 2,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lightleftarm and dict.grapple.ninshilimb ~= "leftarm" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lightleftarm")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.leftarm()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "leftarm" then
+          dict.grapple.ninshi = "leftarm" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.leftarm()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.leftarm()
+      end,
+
+      onstart = function ()
+        send("apply ice to larm wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13167,7 +15635,7 @@ dict = {
       spriority = 378,
 
       isadvisable = function ()
-        return (affs.criticalleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13202,6 +15670,49 @@ dict = {
 
       onstart = function ()
         send("apply health to legs", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 33,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalleftleg")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.leftleg()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "leftleg" then
+          dict.grapple.ninshi = "leftleg" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.leftleg()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.leftleg()
+      end,
+
+      onstart = function ()
+        send("apply ice to lleg wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -13227,7 +15738,7 @@ dict = {
       spriority = 371,
 
       isadvisable = function ()
-        return (affs.heavyleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavyleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13264,6 +15775,49 @@ dict = {
         send("apply health to legs", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 13,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavyleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavyleftleg")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.leftleg()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "leftleg" then
+          dict.grapple.ninshi = "leftleg" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.leftleg()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.leftleg()
+      end,
+
+      onstart = function ()
+        send("apply ice to lleg wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13287,7 +15841,7 @@ dict = {
       spriority = 364,
 
       isadvisable = function ()
-        return (affs.mediumleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13347,7 +15901,7 @@ dict = {
       spriority = 357,
 
       isadvisable = function ()
-        return (affs.lightleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lightleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13384,6 +15938,49 @@ dict = {
         send("apply health to legs", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 6,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lightleftleg and dict.grapple.ninshilimb ~= "leftleg" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lightleftleg")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.leftleg()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "leftleg" then
+          dict.grapple.ninshi = "leftleg" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.leftleg()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.leftleg()
+      end,
+
+      onstart = function ()
+        send("apply ice to lleg wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13407,7 +16004,7 @@ dict = {
       spriority = 379,
 
       isadvisable = function ()
-        return (affs.criticalrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13442,6 +16039,49 @@ dict = {
 
       onstart = function ()
         send("apply health to legs", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 32,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalrightleg")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.rightleg()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "rightleg" then
+          dict.grapple.ninshi = "rightleg" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.rightleg()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.rightleg()
+      end,
+
+      onstart = function ()
+        send("apply ice to rleg wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -13467,7 +16107,7 @@ dict = {
       spriority = 372,
 
       isadvisable = function ()
-        return (affs.heavyrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavyrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13504,6 +16144,49 @@ dict = {
         send("apply health to legs", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 12,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavyrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavyrightleg")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.rightleg()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "rightleg" then
+          dict.grapple.ninshi = "rightleg" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.rightleg()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.rightleg()
+      end,
+
+      onstart = function ()
+        send("apply ice to rleg wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13527,7 +16210,7 @@ dict = {
       spriority = 365,
 
       isadvisable = function ()
-        return (affs.mediumrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13587,7 +16270,7 @@ dict = {
       spriority = 358,
 
       isadvisable = function ()
-        return (affs.lightrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lightrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13624,6 +16307,49 @@ dict = {
         send("apply health to legs", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 5,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lightrightleg and dict.grapple.ninshilimb ~= "rightleg" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lightrightleg")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.rightleg()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "rightleg" then
+          dict.grapple.ninshi = "rightleg" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.rightleg()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.rightleg()
+      end,
+
+      onstart = function ()
+        send("apply ice to rleg wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13647,7 +16373,7 @@ dict = {
       spriority = 330,
 
       isadvisable = function ()
-        return (affs.criticalhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.criticalhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13684,6 +16410,49 @@ dict = {
 
       onstart = function ()
         send("apply health to head", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 34,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.criticalhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("criticalhead")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.head()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "head" then
+          dict.grapple.ninshi = "head" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.head()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.head()
+      end,
+
+      onstart = function ()
+        send("apply ice to head wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -13711,7 +16480,7 @@ dict = {
       spriority = 373,
 
       isadvisable = function ()
-        return (affs.heavyhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.heavyhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13748,6 +16517,49 @@ dict = {
         send("apply health to head", conf.commandecho)
       end
     },
+    ice = {
+      aspriority = 0,
+      spriority = 14,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.heavyhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("heavyhead")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.head()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "head" then
+          dict.grapple.ninshi = "head" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.head()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.head()
+      end,
+
+      onstart = function ()
+        send("apply ice to head wounds", conf.commandecho)
+      end
+    },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
     aff = {
       oncompleted = function (amount)
@@ -13771,7 +16583,7 @@ dict = {
       spriority = 366,
 
       isadvisable = function ()
-        return (affs.mediumhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.mediumhead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13831,7 +16643,7 @@ dict = {
       spriority = 359,
 
       isadvisable = function ()
-        return (affs.lighthead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+        return (conf.oldwarrior and affs.lighthead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
       end,
 
       oncompleted = function ()
@@ -13866,6 +16678,49 @@ dict = {
 
       onstart = function ()
         send("apply health to head", conf.commandecho)
+      end
+    },
+    ice = {
+      aspriority = 0,
+      spriority = 7,
+
+      isadvisable = function ()
+        return (not conf.oldwarrior and affs.lighthead and dict.grapple.ninshilimb ~= "head" and not affs.slickness) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("lighthead")
+        sk.lostbal_ice()
+      end,
+
+      noeffect = function()
+        completely_healed.head()
+        sk.lostbal_ice()
+      end,
+
+      nouse = function ()
+        sk.lostbal_ice()
+      end,
+
+      ninshi = function ()
+        sk.lostbal_ice()
+        if not affs.grapple then addaff(dict.grapple) end
+        if dict.grapple.ninshilimb ~= "head" then
+          dict.grapple.ninshi = "head" end
+      end,
+
+      completely = function ()
+        sk.lostbal_ice()
+        completely_healed.head()
+      end,
+
+      partially = function ()
+        sk.lostbal_ice()
+        partially_healed.head()
+      end,
+
+      onstart = function ()
+        send("apply ice to head wounds", conf.commandecho)
       end
     },
     onremoved = function () signals.after_lifevision_processing:unblock(sp_checksp) end,
@@ -13959,7 +16814,7 @@ dict = {
       end,
 
       onstart = function ()
-        send("apply health left leg", conf.commandecho)
+        send("apply health to legs", conf.commandecho)
       end
     },
     aff = {
@@ -14003,7 +16858,7 @@ dict = {
       end,
 
       onstart = function ()
-        send("apply health left arm", conf.commandecho)
+        send("apply health to arms", conf.commandecho)
       end
     },
     aff = {
@@ -14047,7 +16902,7 @@ dict = {
       end,
 
       onstart = function ()
-        send("apply health right arm", conf.commandecho)
+        send("apply health to arms", conf.commandecho)
       end
     },
     aff = {
@@ -14379,7 +17234,6 @@ dict = {
 
       oncompleted = function ()
         sk.lostbal_focus()
-
         doaction(dict.curingparalysis.waitingfor)
       end,
 
@@ -14396,6 +17250,8 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.paralysis and
           not doingaction("curingparalysis") and not doingaction("paralysis")) or false
@@ -14403,18 +17259,36 @@ dict = {
 
       oncompleted = function ()
         sk.lostbal_wafer()
-
+        removeaff("unknownwafer")
         doaction(dict.curingparalysis.waitingfor)
       end,
 
+      notprone = function ()
+        removeaff("paralysis")
+      end,
+
+      instantcure = function()
+        sk.lostbal_wafer()
+        removeaff("unknownwafer")
+        removeaff("paralysis")
+        end,
+
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("paralysis", "dust")
+        --eat("dust")
       end,
 
       empty = function ()
         empty.eat_wafer()
       end
+    },
+    waitingfor = {
+      customwait = 30,
+      oncompleted = function()
+        removeaff("paralysis")
+      end,
+
     },
     aff = {
       oncompleted = function ()
@@ -14445,6 +17319,10 @@ dict = {
       ontimeout = function ()
         removeaff("paralysis")
         bals.focus = true
+      end,
+
+      notprone = function()
+        removeaff("paralysis")
       end,
 
       onstart = function ()
@@ -14718,18 +17596,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.taintsick and not doingaction "taintsick") or false
       end,
 
       oncompleted = function ()
         removeaff("taintsick")
+        removeaff("unknownwafer")
         sk.lostbal_wafer()
       end,
 
       eatcure = "dust",
       onstart = function ()
-        eat("dust")
+        focus_aff("sickening", "dust")
+        --eat("dust")
       end,
 
       empty = function()
@@ -14780,18 +17662,22 @@ dict = {
       aspriority = 0,
       spriority = 0,
 
+      focus = true,
+
       isadvisable = function ()
         return (affs.illuminated and codepaste.smoke_steam_pipe()) or false
       end,
 
       oncompleted = function ()
         removeaff("illuminated")
+        removeaff("unknownsteam")
         sk.lostbal_steam()
       end,
 
       smokecure = "steam",
       onstart = function ()
-        send("smoke " .. pipes.steam.id, conf.commandecho)
+        focus_aff("illuminated", "smoke " .. pipes.steam.id)
+        --send("smoke " .. pipes.steam.id, conf.commandecho)
       end,
 
       empty = function ()
@@ -14871,6 +17757,211 @@ dict = {
     }
   },
 
+  completelyaurawarped = {
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.completelyaurawarped and
+          not doingaction("completelyaurawarped")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("completelyaurawarped")
+        removeaff("unknownsteam")
+        addaff (dict.massivelyaurawarped)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam warpedaura", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        codepaste.remove_aurawarps()
+        addaff(dict.completelyaurawarped)
+      end,
+    },
+    gone = {
+	  oncompleted = function ()
+	    removeaff("completelyaurawarped")
+	  end,
+	  }
+  },
+  massivelyaurawarped = {
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.massivelyaurawarped and
+          not doingaction("massivelyaurawarped")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("completelyaurawarped")
+        removeaff("massivelyaurawarped")
+        removeaff("unknownsteam")
+        addaff (dict.aurawarped)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam warpedaura", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        codepaste.remove_aurawarps()
+        addaff(dict.massivelyaurawarped)
+      end,
+    },
+    gone = {
+	  oncompleted = function ()
+	    removeaff("massivelyaurawarped")
+	  end,
+	}
+  },
+
+  aurawarped = {
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.aurawarped and
+          not doingaction("aurawarped")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("completelyaurawarped")
+        removeaff("massivelyaurawarped")
+        removeaff("aurawarped")
+        removeaff("unknownsteam")
+        addaff (dict.moderatelyaurawarped)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        codepaste.remove_aurawarps()
+        addaff(dict.aurawarped)
+      end,
+    },
+    gone = {
+	  oncompleted = function ()
+	    removeaff("aurawarped")
+	  end,
+	}
+  },
+  moderatelyaurawarped = {
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.moderatelyaurawarped and
+          not doingaction("moderatelyaurawarped")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("completelyaurawarped")
+        removeaff("massivelyaurawarped")
+        removeaff("aurawarped")
+        removeaff("moderatelyaurawarped")
+        removeaff("unknownsteam")
+        addaff (dict.slightlyaurawarped)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        codepaste.remove_aurawarps()
+        addaff(dict.moderatelyaurawarped)
+      end,
+    },
+    gone = {
+	  oncompleted = function ()
+	    removeaff("moderatelyaurawarped")
+	  end,
+	}
+  },
+  slightlyaurawarped = {
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.slightlyaurawarped and
+          not doingaction("slightlyaurawarped")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("completelyaurawarped")
+        removeaff("massivelyaurawarped")
+        removeaff("aurawarped")
+        removeaff("moderatelyaurawarped")
+        removeaff("slightlyaurawarped")
+        removeaff("unknownsteam")
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        codepaste.remove_aurawarps()
+        addaff(dict.slightlyaurawarped)
+      end,
+    },
+    gone = {
+	  oncompleted = function ()
+	    removeaff("slightlyaurawarped")
+	  end,
+	}
+  },
   massivetimewarp = {
     herb = {
       aspriority = 0,
@@ -14899,6 +17990,7 @@ dict = {
       empty = function()
         empty.eat_horehound()
       end
+
     },
     focus = {
       aspriority = 0,
@@ -14924,6 +18016,32 @@ dict = {
         sk.lostbal_focus()
 
         empty.focus_mind()
+      end
+    },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.massivetimewarp and
+          not doingaction("massivetimewarp")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("massivetimewarp")
+        removeaff("unknownsteam")
+        addaff (dict.majortimewarp)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam timewarp", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
       end
     },
     aff = {
@@ -14993,6 +18111,33 @@ dict = {
         empty.focus_mind()
       end
     },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.majortimewarp and
+          not doingaction("majortimewarp")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("majortimewarp")
+        removeaff("massivetimewarp")
+        removeaff("unknownsteam")
+        addaff (dict.moderatetimewarp)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam timewarp", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_timewarps()
@@ -15060,6 +18205,34 @@ dict = {
         empty.focus_mind()
       end
     },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.moderatetimewarp and
+          not doingaction("moderatetimewarp")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("moderatetimewarp")
+        removeaff("majortimewarp")
+        removeaff("massivetimewarp")
+        removeaff("unknownsteam")
+        addaff (dict.minortimewarp)
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam timewarp", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
+
+      end
+    },
     aff = {
       oncompleted = function ()
         codepaste.remove_timewarps()
@@ -15123,6 +18296,33 @@ dict = {
         sk.lostbal_focus()
 
         empty.focus_mind()
+      end
+    },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (affs.minortimewarp and
+          not doingaction("minortimewarp")) or false
+      end,
+
+      oncompleted = function ()
+        removeaff("minortimewarp")
+        removeaff("moderatetimewarp")
+        removeaff("majortimewarp")
+        removeaff("massivetimewarp")
+        removeaff("unknownsteam")
+        sk.lostbal_steam()
+      end,
+
+      onstart = function ()
+        send("smoke steam", conf.commandecho)
+      end,
+
+      empty = function ()
+        sk.lostbal_steam()
+        empty.smoke_steam()
       end
     },
     aff = {
@@ -15460,6 +18660,8 @@ dict = {
   },
   scarab = {
     waitingfor = {
+      customwait = 3,
+
       isadvisable = function ()
         return false
       end,
@@ -15473,11 +18675,38 @@ dict = {
     aff = {
       oncompleted = function ()
         addaff(dict.scarab)
+        doaction(dict.scarab.waitingfor)
       end
     },
     gone = {
       oncompleted = function ()
         removeaff("scarab")
+      end
+    }
+  },
+  echoes = {
+    waitingfor = {
+      customwait = 12,
+
+      isadvisable = function ()
+        return false
+      end,
+
+      onstart = function () end,
+
+      oncompleted = function ()
+        removeaff("echoes")
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        addaff(dict.echoes)
+        doaction(dict.echoes.waitingfor)
+      end
+    },
+    gone = {
+      oncompleted = function ()
+        removeaff("echoes")
       end
     }
   },
@@ -15883,6 +19112,7 @@ dict = {
 
       oncompleted = function ()
         removeaff("sap")
+        signals.sapcured:emit()
       end,
 
       empty = function () empty.cleanse() end,
@@ -15896,18 +19126,21 @@ dict = {
       oncompleted = function ()
         addaff(dict.sap)
         signals.aeony:emit()
+        signals.sapafflicted:emit()
       end
     },
     gone = {
       oncompleted = function ()
         removeaff("sap")
         killaction (dict.earache.waitingfor)
+        signals.sapcured:emit()
       end,
     },
     onremoved = function ()
       if affsp.sap then
         affsp.sap = nil end
       signals.aeony:emit()
+      signals.sapcured:emit()
     end,
   },
   choke = {
@@ -17577,7 +20810,8 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.roped)
+        addaff(dict.tangle)
+        --addaff(dict.roped)
       end,
     },
     gone = {
@@ -17626,11 +20860,12 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.shackled)
+        addaff(dict.tangle)
+        --[[addaff(dict.shackled)
 
         if actions.sap_physical then
           killaction (dict.sap.physical)
-        end
+        end]]
       end,
     },
     gone = {
@@ -17802,7 +21037,8 @@ dict = {
     },
     aff = {
       oncompleted = function ()
-        addaff(dict.truss)
+        addaff(dict.tangle)
+        --addaff(dict.truss)
       end,
     },
     gone = {
@@ -17845,6 +21081,10 @@ dict = {
         codepaste.dowrithe("entangle")
       end,
 
+      notprone = function ()
+        removeaff("tangle")
+      end,
+
       helpless = function ()
         empty.writhe_entangle()
       end
@@ -17871,6 +21111,10 @@ dict = {
       customwait = 6,
 
       oncompleted = function ()
+        removeaff("tangle")
+      end,
+
+      notprone = function ()
         removeaff("tangle")
       end,
 
@@ -17927,6 +21171,44 @@ dict = {
       end
     },
   },
+  checkparalysis = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (next(affsp) and affsp.paralysis) or false
+      end,
+
+      oncompleted = function () end,
+
+      paralyzed = function ()
+        if affsp.paralysis then
+          affsp.paralysis = nil
+          addaff (dict.paralysis)
+        end
+      end,
+
+      onclear = function ()
+        if affsp.paralysis then
+          affsp.paralysis = nil end
+      end,
+
+      notprone = function ()
+        dict.checkparalysis.onclear()
+      end,
+
+      onstart = function ()
+          enableTrigger("m&m check paralysis")
+          send("touch balls", false)
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        if not affs.paralysis then affsp.paralysis = true end
+      end
+    },
+  },
   checkslitthroat = {
     misc = {
       aspriority = 0,
@@ -17961,6 +21243,40 @@ dict = {
       end
     },
   },
+  checkdamagedthroat = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+
+      isadvisable = function ()
+        return (next(affsp) and (affsp.damagedthroat)) or false
+      end,
+
+      oncompleted = function () end,
+
+      has = function ()
+        if affsp.damagedthroat then
+          affsp.damagedthroat = nil
+          addaff (dict.damagedthroat)
+          signals.after_lifevision_processing:unblock(cnrl.checkwarning)
+        end
+      end,
+
+      onclear = function ()
+        if affsp.damagedthroat then
+          affsp.damagedthroat = nil end
+      end,
+
+      onstart = function ()
+        send("sip", false)
+      end
+    },
+    aff = {
+      oncompleted = function ()
+        if not affs.damagedthroat then affsp.damagedthroat = true end
+      end
+    },
+  },
   checkslickness = {
     misc = {
       aspriority = 0,
@@ -17983,7 +21299,7 @@ dict = {
       end,
 
       onstart = function ()
-        send("apply liniment checkslickness", conf.commandecho)
+        send("apply liniment", conf.commandecho)
       end
     },
     aff = {
@@ -18066,6 +21382,13 @@ dict = {
           -- timer for ending
           tempTimer(startin+duration, function () killTrigger(cnrl.warnids[tbl.prefixwarning]) end)
         end
+      end
+    }
+  },
+  stolebalance = {
+    happened = {
+      oncompleted = function (balance)
+        $(sys)["lostbal_"..balance]()
       end
     }
   },
@@ -18269,8 +21592,140 @@ dict = {
         sk.lostbal_herb()
       end
     },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        --[[return (not affs.earache and ((sys.deffing and defdefup[defs.mode].truedeaf and not defc.truedeaf) or (conf.keepup and defkeepup[defs.mode].truedeaf and not defc.truedeaf))) or false]]
+        return false
+      end,
+
+      oncompleted = function (def)
+        if def then defences.got("truedeaf")
+        else
+          defences.got("truedeaf")
+          sk.lostbal_wafer()
+        end
+      end,
+
+      earache = function ()
+        sk.lostbal_wafer()
+        if not affs.earache then addaff(dict.earache) end
+      end,
+
+      cureddeaf = function()
+        defences.lost("deaf")
+        sk.lostbal_wafer()
+
+        if not conf.aillusion then defences.lost("truedeaf") end
+      end,
+
+      eatcure = "earwort",
+      onstart = function ()
+        eat("earwort")
+      end,
+
+      empty = function()
+        defences.got("truedeaf")
+        sk.lostbal_wafer()
+      end
+    },
+    steam = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (not affs.earache and codepaste.smoke_steam_pipe() and ((sys.deffing and defdefup[defs.mode].truedeaf and not defc.truedeaf) or (conf.keepup and defkeepup[defs.mode].truedeaf and not defc.truedeaf))) or false
+      end,
+
+      oncompleted = function (def)
+        if def then defences.got("truedeaf")
+        else
+          defences.got("truedeaf")
+          sk.lostbal_steam()
+        end
+      end,
+
+      earache = function ()
+        sk.lostbal_steam()
+        if not affs.earache then addaff(dict.earache) end
+      end,
+
+      cureddeaf = function()
+        defences.lost("deaf")
+        sk.lostbal_steam()
+
+        if not conf.aillusion then defences.lost("truedeaf") end
+      end,
+
+      eatcure = "earwort",
+      onstart = function ()
+        eat("earwort")
+      end,
+
+      empty = function()
+        defences.got("truedeaf")
+        sk.lostbal_steam()
+      end
+    },
   },
   trueblind = {
+
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].trueblind and not defc.trueblind) or (conf.keepup and defkeepup[defs.mode].trueblind and not defc.trueblind)) and not doingaction("waitingontrueblind") and not affs.afterimage and not (affs.eyepeckleft and affs.eyepeckright)) or false
+      end,
+
+      oncompleted = function (fromdef)
+        if fromdef then
+          defences.got("trueblind")
+        else
+          doaction(dict.waitingontrueblind.waitingfor)
+          sk.lostbal_wafer()
+        end
+      end,
+
+      gettingtrueblind = function ()
+        doaction(dict.waitingontrueblind.waitingfor)
+        sk.lostbal_wafer()
+      end,
+
+      alreadygot = function ()
+        defences.got("trueblind")
+        sk.lostbal_wafer()
+      end,
+
+      afterimage = function ()
+        sk.lostbal_wafer()
+        addaff (dict.afterimage)
+      end,
+
+      curedblind = function()
+        defences.lost("blind")
+        sk.lostbal_wafer()
+
+        if not conf.aillusion then defences.lost("trueblind") end
+      end,
+
+      eatcure = "faeleaf",
+      onstart = function ()
+        eat("faeleaf")
+      end,
+
+      empty = function()
+        if affs.blind then
+          removeaff("blind")
+          defences.got("trueblind")
+        end
+      end
+    },
     herb = {
       aspriority = 128,
       spriority = 248,
@@ -18347,6 +21802,219 @@ dict = {
       end
     }
   },
+
+  --candies
+  mint = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].mint and not defc.mint) or (conf.keepup and defkeepup[defs.mode].mint  and not defc.mint)) and not doingaction("mint") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("mint")
+      end,
+
+      eatcure = "mint",
+
+      onstart = function ()
+        send("eat mint", conf.commandecho)
+      end
+    }
+  },
+  gumball = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].gumball and not defc.gumball) or (conf.keepup and defkeepup[defs.mode].gumball  and not defc.gumball)) and not doingaction("gumball") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("gumball")
+      end,
+
+      eatcure = "bubblegum",
+
+      onstart = function ()
+        send("eat bubblegum", conf.commandecho)
+      end
+    }
+  },
+  fireball = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].fireball and not defc.fireball) or (conf.keepup and defkeepup[defs.mode].fireball  and not defc.fireball)) and not doingaction("fireball") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("fireball")
+      end,
+
+      eatcure = "fireball",
+
+      onstart = function ()
+        send("eat fireball", conf.commandecho)
+      end
+    }
+  },
+  rockcandy = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].rockcandy and not defc.rockcandy) or (conf.keepup and defkeepup[defs.mode].rockcandy  and not defc.rockcandy)) and not doingaction("rockcandy") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("rockcandy")
+      end,
+
+      eatcure = "rockcandy",
+
+      onstart = function ()
+        send("eat rockcandy", conf.commandecho)
+      end
+    }
+  },
+  licorice = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].licorice and not defc.licorice) or (conf.keepup and defkeepup[defs.mode].licorice  and not defc.licorice)) and not doingaction("licorice") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("licorice")
+      end,
+
+      eatcure = "licorice",
+
+      onstart = function ()
+        send("eat licorice", conf.commandecho)
+      end
+    }
+  },
+  jellybaby = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].jellybaby and not defc.jellybaby) or (conf.keepup and defkeepup[defs.mode].jellybaby  and not defc.jellybaby)) and not doingaction("jellybaby") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("jellybaby")
+      end,
+
+      eatcure = "jellybaby",
+
+      onstart = function ()
+        send("eat jellybaby", conf.commandecho)
+      end
+    }
+  },
+  creamchew = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].creamchew and not defc.creamchew) or (conf.keepup and defkeepup[defs.mode].creamchew  and not defc.creamchew)) and not doingaction("creamchew") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("creamchew")
+      end,
+
+      eatcure = "creamchews",
+
+      onstart = function ()
+        send("eat creamchews", conf.commandecho)
+      end
+    }
+  },
+  waxlips = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].waxlips and not defc.waxlips) or (conf.keepup and defkeepup[defs.mode].waxlips  and not defc.waxlips)) and not doingaction("waxlips") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("waxlips")
+      end,
+
+      eatcure = "waxlips",
+
+      onstart = function ()
+        send("eat waxlips", conf.commandecho)
+      end
+    }
+  },
+  redlollipop = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].redlollipop and not defc.redlollipop) or (conf.keepup and defkeepup[defs.mode].redlollipop  and not defc.redlollipop)) and not doingaction("redlollipop") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("redlollipop")
+      end,
+
+      eatcure = "redlollipop",
+
+      onstart = function ()
+        send("eat redlollipop", conf.commandecho)
+      end
+    }
+  },
+  bluelollipop = {
+    misc = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].bluelollipop and not defc.bluelollipop) or (conf.keepup and defkeepup[defs.mode].bluelollipop  and not defc.bluelollipop)) and not doingaction("bluelollipop") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("bluelollipop")
+      end,
+
+      eatcure = "bluelollipop",
+
+      onstart = function ()
+        send("eat bluelollipop", conf.commandecho)
+      end
+    }
+  },
+
 
   --purgative
   galvanism = {
@@ -18735,7 +22403,7 @@ dict = {
       def = true,
 
       isadvisable = function ()
-        return (((sys.deffing and defdefup[defs.mode].quicksilver and not defc.quicksilver) or (conf.keepup and defkeepup[defs.mode].quicksilver  and not defc.quicksilver)) and not doingaction("curingquicksilver") and not doingaction("quicksilver") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat and not affs.crushedwindpipe and not affs.crucified and not dict.quicksilver.blocked and not sys.manualdefcheck) or false
+        return (((sys.deffing and defdefup[defs.mode].quicksilver and not defc.quicksilver) or (conf.keepup and defkeepup[defs.mode].quicksilver  and not defc.quicksilver)) and not doingaction("curingquicksilver") and not doingaction("quicksilver") and not affs.anorexia and not affs.throatlock and not affs.scarab and not affs.slitthroat and not affs.crushedwindpipe and not affs.crucified and not dict.quicksilver.blocked and not sys.manualdefcheck and not conf.adrenaline) or false
       end,
 
       oncompleted = function (def)
@@ -18774,6 +22442,48 @@ dict = {
       empty = function ()
         dict.quicksilver.misc.oncompleted ()
       end
+    },
+    physical = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+      balanceful_act = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].quicksilver and not defc.quicksilver) or (conf.keepup and defkeepup[defs.mode].quicksilver  and not defc.quicksilver)) and conf.adrenaline and not doingaction("curingquicksilver") and not doingaction("quicksilver") and not affs.paralysis and not dict.quicksilver.blocked and not sys.manualdefcheck and mm.me.activeskills.athletics and mm.bals.balance and mm.bals.equilibrium) or false
+      end,
+
+      onstart = function ()
+        send("adrenaline", conf.commandecho)
+      end,
+
+      oncompleted = function (def)
+        if def then defences.got("quicksilver")
+        else
+          -- update quicksilver delay appropriately
+          if affs.minortimewarp then
+            dict.curingquicksilver.waitingfor.customwait = 5.6
+          elseif affs.moderatetimewarp then
+            dict.curingquicksilver.waitingfor.customwait = 6
+          elseif affs.majortimewarp then
+            dict.curingquicksilver.waitingfor.customwait = 6.7
+          elseif affs.massivetimewarp then
+            dict.curingquicksilver.waitingfor.customwait = 7.6
+          else
+            dict.curingquicksilver.waitingfor.customwait = 5
+          end
+
+          doaction(dict.curingquicksilver.waitingfor)
+        end
+      end,
+
+      ontimeout = function ()
+        if not affs.blackout then return end
+
+        dict.quicksilver.blocked = true
+        tempTimer(3, function () dict.quicksilver.blocked = false; make_gnomes_work() end)
+      end,
+
     },
     gone = {
       oncompleted = function ()
@@ -19620,9 +23330,14 @@ dict = {
       end,
 
       onstart = function ()
-        send("rub waterbreathe", conf.commandecho)
-        if conf.autorecharge and not sys.sync then
-          send("recharge waterbreathe from cube", conf.commandecho) end
+        if not conf.enchantments and mm.me.activeskills.elementalism then
+          send("cast waterbreathe", conf.commandecho)
+        else
+          send("rub waterbreathe", conf.commandecho)
+          if conf.autorecharge and not sys.sync then
+            send("recharge waterbreathe from cube", conf.commandecho)
+          end
+        end
       end
     }
   },
@@ -19867,7 +23582,7 @@ dict = {
       def = true,
 
       isadvisable = function ()
-        return (((sys.deffing and defdefup[defs.mode].vitality and not defc.vitality) or (conf.keepup and defkeepup[defs.mode].vitality and not defc.vitality)) and not codepaste.balanceful_defs_codepaste() and not affs.prone) or false
+        return (((sys.deffing and defdefup[defs.mode].vitality and not defc.vitality) or (conf.keepup and defkeepup[defs.mode].vitality and not defc.vitality)) and (mm.me.activeskills.athletics or mm.me.artifacts.vitality) and not codepaste.balanceful_defs_codepaste() and not affs.prone) or false
       end,
 
       oncompleted = function ()
@@ -20043,9 +23758,51 @@ dict = {
       end
     },
   },
+#elseif not skills.athletics then
+  vitality = {
+    physical = {
+      balanceful_act = true,
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].vitality and not defc.vitality) or (conf.keepup and defkeepup[defs.mode].vitality and not defc.vitality)) and mm.me.artifacts.vitality and not codepaste.balanceful_defs_codepaste() and not affs.prone) or false
+      end,
+
+      oncompleted = function ()
+        defences.got("vitality")
+      end,
+
+      onstart = function ()
+        send("vitality", conf.commandecho)
+      end
+    }
+  },
 #end
+  
 
 #basicdef("respect", "manifest respect")
+  catsluck = {
+    physical = {
+      balanceful_act = true,
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].catsluck and not defc.catsluck) or (conf.keepup and defkeepup[defs.mode].catsluck and not defc.catsluck)) and not codepaste.balanceful_defs_codepaste() and not affs.prone) and conf.catsluck or false
+      end,
+
+      oncompleted = function ()
+        defences.got("catsluck")
+      end,
+
+      onstart = function ()
+        send("jewel cast "..conf.catsluck, conf.commandecho)
+      end
+    }
+  },
 
 #if skills.highmagic then
   yesod = {
@@ -20190,7 +23947,7 @@ dict = {
       def = true,
 
       isadvisable = function ()
-        return (((sys.deffing and defdefup[defs.mode].fervor and not defc.fervor) or (conf.keepup and defkeepup[defs.mode].fervor and not defc.fervor)) and not codepaste.balanceful_defs_codepaste() and not affs.prone) or false
+        return (((stats.currentpower >= 3 and sys.deffing and defdefup[defs.mode].fervor and not defc.fervor) or (conf.keepup and defkeepup[defs.mode].fervor and not defc.fervor)) and not codepaste.balanceful_defs_codepaste() and not affs.prone) or false
       end,
 
       oncompleted = function ()
@@ -20341,7 +24098,7 @@ dict = {
       end,
 
       onstart = function ()
-        if not conf.enchantments then
+        if not conf.enchantments and mm.me.activeskills.rituals then
           send("chant acquisitio on", conf.commandecho)
         else
           send("rub acquisitio", conf.commandecho)
@@ -20442,6 +24199,336 @@ dict = {
   },
 #end
 
+--wondercorn defs - they don't require balance, but consume it
+wondercornbal = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercornbal and not defc.wondercornbal) or (conf.keepup and defkeepup[defs.mode].wondercornbal and not defc.wondercornbal)) and codepaste.wonderitems("wondercornbal") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercornbal")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate balance", conf.commandecho)
+          end
+        end
+      }
+    },
+wondercornhp = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercornhp and not defc.wondercornhp) or (conf.keepup and defkeepup[defs.mode].wondercornhp and not defc.wondercornhp)) and codepaste.wonderitems("wondercornhp") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercornhp")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate health", conf.commandecho)
+          end
+        end
+      }
+    },
+wondercornmp = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercornmp and not defc.wondercornmp) or (conf.keepup and defkeepup[defs.mode].wondercornmp and not defc.wondercornmp)) and codepaste.wonderitems("wondercornmp") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercornmp")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate mana", conf.commandecho)
+          end
+        end
+      }
+    },
+wondercornego = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercornego and not defc.wondercornego) or (conf.keepup and defkeepup[defs.mode].wondercornego and not defc.wondercornego)) and codepaste.wonderitems("wondercornego") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercornego")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate ego", conf.commandecho)
+          end
+        end
+      }
+    },
+wondercornres = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercornres and not defc.wondercornres) or (conf.keepup and defkeepup[defs.mode].wondercornres and not defc.wondercornres)) and codepaste.wonderitems("wondercornres") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercornres")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate resistance", conf.commandecho)
+          end
+        end
+      }
+    },
+wondercorndam = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercorndam and not defc.wondercorndam) or (conf.keepup and defkeepup[defs.mode].wondercorndam and not defc.wondercorndam)) and codepaste.wonderitems("wondercorndam") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercorndam")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate damage", conf.commandecho)
+          end
+        end
+      }
+    },
+wondercorneq = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].wondercorneq and not defc.wondercorneq) or (conf.keepup and defkeepup[defs.mode].wondercorneq and not defc.wondercorneq)) and codepaste.wonderitems("wondercorneq") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("wondercornbal")
+            defences.got("wondercorneq")
+            defences.got("wondercornhp")
+            defences.got("wondercornmp")
+            defences.got("wondercornego")
+            defences.got("wondercorndam")
+            defences.got("wondercornres")
+          else
+            defences.got("wondercorneq")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("wondercorn activate all", conf.commandecho)
+          else
+            send("wondercorn activate equilibrium", conf.commandecho)
+          end
+        end
+      }
+    },
+redgenies = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].redgenies and not defc.redgenies) or (conf.keepup and defkeepup[defs.mode].redgenies and not defc.redgenies)) and codepaste.geniedefs("redgenies") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("redgenies")
+            defences.got("bluegenies")
+            defences.got("yellowgenies")
+          else
+            defences.got("redgenies")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("curio collection activate genies", conf.commandecho)
+          else
+            send("curio collection activate redgenies", conf.commandecho)
+          end
+        end
+      }
+    },
+bluegenies = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].bluegenies and not defc.bluegenies) or (conf.keepup and defkeepup[defs.mode].bluegenies and not defc.bluegenies)) and codepaste.geniedefs("bluegenies") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("redgenies")
+            defences.got("bluegenies")
+            defences.got("yellowgenies")
+          else
+            defences.got("bluegenies")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("curio collection activate genies", conf.commandecho)
+          else
+            send("curio collection activate bluegenies", conf.commandecho)
+          end
+        end
+      }
+    },
+yellowgenies = {
+      physical = {
+        balanceful_act = true,
+        aspriority = 0,
+        spriority = 0,
+        def = true,
+
+        isadvisable = function ()
+          return (((sys.deffing and defdefup[defs.mode].yellowgenies and not defc.yellowgenies) or (conf.keepup and defkeepup[defs.mode].yellowgenies and not defc.yellowgenies)) and codepaste.geniedefs("yellowgenies") and not codepaste.balanceful_defs_codepaste() and not affs.paralysis and not affs.prone) or false
+        end,
+
+        oncompleted = function ()
+          if conf.wonderall then
+            defences.got("redgenies")
+            defences.got("bluegenies")
+            defences.got("yellowgenies")
+          else
+            defences.got("yellowgenies")
+          end
+        end,
+
+        onstart = function ()
+          if conf.wonderall then
+            send("curio collection activate genies", conf.commandecho)
+          else
+            send("curio collection activate yellowgenies", conf.commandecho)
+          end
+        end
+      }
+    },
+
 #if skills.astrology then
 #basicdef("volcano", "astrocast volcano sphere at me")
 #basicdef("dragon", "astrocast dragon sphere at me")
@@ -20486,6 +24573,12 @@ dict = {
 #basicdef("concentrated", "combatstyle concentrated", true)
 #basicdef("defensive", "combatstyle defensive", true)
 #basicdef("lightning", "combatstyle lightning", true)
+#basicdef("bleeder", "combatstyle bleeder", true)
+#basicdef("bludgeoner", "combatstyle bludgeoner", true)
+#basicdef("berserker", "combatstyle berserker", true)
+#basicdef("pulverizer", "combatstyle pulverizer", true)
+#basicdef("mutilator", "combatstyle mutilator", true)
+#basicdef("poisonist", "combatstyle poisonist", true)
 #end
 
 #if skills.cavalier then
@@ -20657,7 +24750,7 @@ dict = {
       def = true,
 
       isadvisable = function ()
-        return (((sys.deffing and defdefup[defs.mode].trueblind and not defdefup[defs.mode].secondsight and not defc.trueblind) or (conf.keepup and defkeepup[defs.mode].trueblind and not defkeepup[defs.mode].secondsight and not defc.trueblind)) and not doingaction("waitingontrueblind") and not doingaction ("waitingonsecondsight") and not affs.afterimage and not (affs.eyepeckleft and affs.eyepeckright)) or false
+        return false --[[(((sys.deffing and defdefup[defs.mode].trueblind and not defdefup[defs.mode].secondsight and not defc.trueblind) or (conf.keepup and defkeepup[defs.mode].trueblind and not defkeepup[defs.mode].secondsight and not defc.trueblind)) and not doingaction("waitingontrueblind") and not doingaction ("waitingonsecondsight") and not affs.afterimage and not (affs.eyepeckleft and affs.eyepeckright)) or false]]
       end,
 
       oncompleted = function (def)
@@ -20686,6 +24779,53 @@ dict = {
       curedblind = function()
         defences.lost("blind")
         sk.lostbal_herb()
+
+        if not conf.aillusion then defences.lost("trueblind") end
+      end,
+
+      eatcure = "faeleaf",
+      onstart = function ()
+        eat("faeleaf")
+      end,
+
+      empty = function()
+      end
+    },
+    wafer = {
+      aspriority = 0,
+      spriority = 0,
+      def = true,
+
+      isadvisable = function ()
+        return (((sys.deffing and defdefup[defs.mode].trueblind and not defdefup[defs.mode].secondsight and not defc.trueblind) or (conf.keepup and defkeepup[defs.mode].trueblind and not defkeepup[defs.mode].secondsight and not defc.trueblind)) and not doingaction("waitingontrueblind") and not doingaction ("waitingonsecondsight") and not affs.afterimage and not (affs.eyepeckleft and affs.eyepeckright)) or false
+      end,
+
+      oncompleted = function (def)
+        if def then defences.got("trueblind")
+        else
+          doaction(dict.waitingontrueblind.waitingfor)
+          sk.lostbal_wafer()
+        end
+      end,
+
+      gettingtrueblind = function ()
+        doaction(dict.waitingontrueblind.waitingfor)
+        sk.lostbal_wafer()
+      end,
+
+      alreadygot = function ()
+        defences.got("trueblind")
+        sk.lostbal_wafer()
+      end,
+
+      afterimage = function ()
+        sk.lostbal_wafer()
+        addaff (dict.afterimage)
+      end,
+
+      curedblind = function()
+        defences.lost("blind")
+        sk.lostbal_wafer()
 
         if not conf.aillusion then defences.lost("trueblind") end
       end,
@@ -21000,7 +25140,7 @@ dict = {
 #basicdef("fusion", "shift fusion on")
 #basicdef("polarity", "shift polarity on")
 #basicdef("enthrall", "shift enthrall")
-#basicdef("chaotesign", "shift chaotesign")
+#basicdef_withpower("chaotesign", "shift chaotesign", 2)
 #basicdef_withpower("chaosaura", "shift chaosaura on", 10)
 #end
 
@@ -21020,7 +25160,7 @@ dict = {
 #basicdef_withpower("warrior", {"outd warrior", "fling warrior at ground"}, 2)
 #basicdef_withpower("starleaper", {"outd starleaper", "fling starleaper at ground"}, 2)
 #basicdef("princess", {"outd princess", "fling princess at ground"})
-#basicdef("teacher", {"outd princess", "fling teacher at ground"})
+#basicdef("teacher", {"outd teacher", "fling teacher at ground"})
 #end
 
 #if skills.wicca then
@@ -21062,7 +25202,7 @@ end)
       end,
 
       onstart = function ()
-        if not conf.enchantments then
+        if not conf.enchantments and mm.me.activeskills.elementalism then
           send("cast levitate", conf.commandecho)
         else
           send("rub levitate", conf.commandecho)
@@ -21334,7 +25474,7 @@ end)
       end,
 
       onstart = function ()
-        if not conf.enchantments then
+        if not conf.enchantments and mm.me.activeskills.cosmic then
           send("abjure nimbus", conf.commandecho)
         else
           send("rub nimbus", conf.commandecho)
@@ -21360,7 +25500,9 @@ end)
       end,
 
       onstart = function ()
-        if not conf.enchantments then
+        if conf.deathsight then
+          send("deathsight", conf.commandecho)
+        elseif not conf.enchantments then
           send("abjure deathsight", conf.commandecho)
         else
           send("rub deathsight", conf.commandecho)
@@ -21386,7 +25528,7 @@ end)
       end,
 
       onstart = function ()
-        if not conf.enchantments then
+        if not conf.enchantments and mm.me.activeskills.cosmic then
           send("abjure waterwalk", conf.commandecho)
         else
           send("rub waterwalk", conf.commandecho)
@@ -21631,9 +25773,9 @@ end)
 
       onstart = function ()
         if (bals.super and bals.super ~= "locked") then
-          send("psi super enhancement dexterity", conf.commandecho)
+          send("psi super enhancement speed", conf.commandecho)
         else
-          send("psi id enhancement dexterity", conf.commandecho)
+          send("psi id enhancement speed", conf.commandecho)
         end
       end
     }
@@ -21655,9 +25797,9 @@ end)
 
       onstart = function ()
         if (bals.super and bals.super ~= "locked") then
-          send("psi super enhancement strength", conf.commandecho)
+          send("psi super enhancement damage", conf.commandecho)
         else
-          send("psi id enhancement strength", conf.commandecho)
+          send("psi id enhancement damage", conf.commandecho)
         end
       end
     }
@@ -22930,6 +27072,8 @@ local function dict_setup()
   dict_misc_def        = {}
   dict_purgative       = {}
   dict_sparkleaffs     = {}
+  dict_wafer           = {}
+  dict_steam           = {}
 
   local unassigned_actions      = {}
   local unassigned_sync_actions = {}
@@ -22971,6 +27115,12 @@ local function dict_setup()
 
     if j.herb and j.herb.def then
       dict_herb[i] = {p = dict[i]} end
+
+    if j.wafer and j.wafer.def then
+      dict_wafer[i] = {p = dict[i]} end
+
+    if j.steam and j.steam.def then
+      dict_steam[i] = {p = dict[i]} end
 
     if j.sparkle then
       dict_sparkleaffs[i] = {p = dict[i]} end

@@ -134,6 +134,8 @@ signals.systemstart:connect(function ()
 end)
 #end
 
+signals.connected = luanotify.signal.new()
+signals.loggedin = luanotify.signal.new()
 signals.quit = luanotify.signal.new()
 #if DEBUG then
 signals.quit:connect(function ()
@@ -152,7 +154,14 @@ signals.gmcproominfo = luanotify.signal.new()
 signals.gmcpcharitemslist = luanotify.signal.new()
 signals.gmcpcharskillsinfo = luanotify.signal.new()
 signals.gmcpcharskillslist = luanotify.signal.new()
+signals.gmcpcharskillsgroups = luanotify.signal.new()
 signals.gmcpcharitemsupdate = luanotify.signal.new()
+signals.gmcpcharafflictionsadd = luanotify.signal.new()
+signals.gmcpcharafflictionsremove = luanotify.signal.new()
+signals.gmcpcharafflictionslist = luanotify.signal.new()
+signals.gmcpchardefencesadd = luanotify.signal.new()
+signals.gmcpchardefencesremove = luanotify.signal.new()
+signals.gmcpchardefenceslist = luanotify.signal.new()
 
 signals["mmapper updated pdb"] = luanotify.signal.new()
 signals.sysexitevent = luanotify.signal.new()
@@ -200,6 +209,10 @@ signals.enablegmcp:add_post_emit(function ()
     signals.relogin:emit()
     echof("Welcome back!")
   end
+
+  -- app("off", true) -- this triggers a dict() run too early before login
+  if dont_unpause_login then dont_unpause_login = nil
+  else conf.paused = false end
 end)
 signals.newroom = luanotify.signal.new()
 signals.newarea = luanotify.signal.new()
@@ -227,6 +240,8 @@ signals.saveconfig:add_post_emit(function ()
 end)
 
 signals.loadedconfig = luanotify.signal.new()
+signals.sapafflicted = luanotify.signal.new()
+signals.sapcured = luanotify.signal.new()
 
 paragraph_length = 0
 
@@ -247,12 +262,17 @@ conf.assumestats = 0
 
 
 conf.paused = false
+conf.autoarena = false
+conf.arena = false
+conf.oldwarrior = false
 conf.lag = 0
 sys.wait = 0.7 -- for lag
 conf.aillusion = false
 conf.keepup = true
 conf.sparkleherb = "coltsfoot"
 conf.vitaemode = "empty"
+conf.attemptearlystun = false
+conf.adrenaline = false
 
 conf.sacdelay = 0.5 -- delay after which the systems curing should resume in sync mode
 conf.pindelay = 0.050
@@ -263,9 +283,13 @@ conf.manause = 35
 conf.bashing = true
 
 -- have skills?
-conf.focusbody = true
+conf.focusbody = false
 conf.focusmind = false
 conf.cleanse = false
+
+conf.beastfocus = false
+conf.aeonfocus = true
+conf.powerfocus = false
 
 conf.commandecho = true
 conf.blockcommands = true
@@ -279,6 +303,8 @@ conf.doubledo = false
 
 conf.ridingskill = "mount"
 conf.ridingsteed = "pony"
+conf.wonderall = false
+conf.geniesall = false
 
 conf.changestype = "shortpercent"
 
@@ -311,6 +337,8 @@ conf.relight = true
 
 conf.showafftimes = true
 conf.waitherbai = true
+conf.loadsap = false
+conf.aeonprios = "current"
 
 sys.sync = false
 sys.deffing = false
@@ -350,6 +378,10 @@ me.skills  = {}
 me.wielded = {}
 me.dmplist = {}
 me.locks   = {}
+me.focus   = {}
+me.artifacts = {}
+me.prone = false
+me.lastprone = false
 
 $(
 local paths = {}; paths.oldpath = package.path; package.path = package.path..";./?.lua;./bin/?.lua;"; local pretty = require "pl.pretty"; package.path = paths.oldpath
@@ -385,7 +417,7 @@ local index_map = pl.tablex.index_map
 
 local addaff, removeaff, checkanyaffs, updateaffcount
 
-sk.salvetick, sk.herbtick, sk.focustick, sk.teatick, sk.purgativetick, sk.siptick, sk.luciditytick, sk.steamtick, sk.wafertick = 0, 0, 0, 0, 0, 0, 0, 0, 0
+sk.salvetick, sk.herbtick, sk.focustick, sk.teatick, sk.purgativetick, sk.siptick, sk.luciditytick, sk.steamtick, sk.wafertick, sk.icetick = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 sk.overhaul = sk.overhaul or {}
 
 
@@ -418,7 +450,7 @@ local affsp = {}
 
 local rift, pipes = {}, {}
 
-local check_focus, check_salve, check_sip, check_purgative, check_herb, check_scroll, check_sparkle, check_misc, check_balanceless_acts, check_allheale, check_balanceful_acts, check_lucidity, check_steam, check_wafer
+local check_focus, check_salve, check_sip, check_purgative, check_herb, check_scroll, check_sparkle, check_misc, check_balanceless_acts, check_allheale, check_balanceful_acts, check_lucidity, check_steam, check_wafer, check_ice
 
 local generics_enabled, generics_enabled_for_blackout, generics_enabled_for_passive, enable_generic_trigs, disable_generic_trigs, check_generics
 
@@ -447,6 +479,9 @@ sk.overhauldata = {
   clumsiness     = { newbalances = {"lucidity"}, oldbalances = {"herb"}, replaces = {"loneliness", "dementia", "weakness"}},
   stupidity      = { newbalances = {"lucidity"}, oldbalances = {"herb", "focus"}, replaces = {"daydreaming", "narcolepsy"}},
   addiction      = { newbalances = {"lucidity"}, oldbalances = {"herb", "focus"}, replaces = {"gluttony"}},
+  unknownlucidity      = { newbalances = {"lucidity"}, oldbalances = {}, replaces = {}},
+  unknownsteam   = {newbalances = {"steam"}, oldbalances = {}, replaces = {}},
+  unknownwafer   = {newbalances = {"wafer"}, oldbalances = {}, replaces = {}},
   egovice        = { newbalances = {"steam"}, oldbalances = {"herb"}},
   manabarbs      = { newbalances = {"steam"}, oldbalances = {"herb"}},
   achromaticaura = { newbalances = {"steam"}, oldbalances = {"herb"}},
@@ -465,6 +500,31 @@ sk.overhauldata = {
   vomiting       = { newbalances = {"wafer"}, oldbalances = {"purgative"}, replaces = {"vomitblood"}},
   rigormortis    = { newbalances = {"wafer"}, oldbalances = {"herb"}},
   taintsick      = { newbalances = {"wafer"}, oldbalances = {"focus"}, replaces = {"crotamine"}},
+  anorexia       = { newbalances = {"lucidity"}, oldbalances = {"herb"}, replaces = {"throatlock"}},
+  asthma         = { newbalances = {"wafer"}, oldbalances = {"salve"}},
+  slickness      = { newbalances = {"steam"}, oldbalances = {"herb"}},
+  blind          = { newbalances = {"wafer"}, oldbalances = {"herb"}},
+  trueblind      = { newbalances = {"wafer"}, oldbalances = {"herb"}},
+  deaf           = { newbalances = {"steam"}, oldbalances = {"herb","wafer"}},
+  truedeaf          = { newbalances = {"steam"}, oldbalances = {"herb","wafer"}},
+  attraction        = { newbalances = {"steam"}, oldbalances = {"herb","wafer"}},
+  massivetimewarp   = { newbalances = {"steam"}, oldbalances = {"herb","focus"}},
+  majortimewarp     = { newbalances = {"steam"}, oldbalances = {"herb","focus"}},
+  moderatetimewarp  = { newbalances = {"steam"}, oldbalances = {"herb","focus"}},
+  minortimewarp     = { newbalances = {"steam"}, oldbalances = {"herb","focus"}},
+  massiveinsanity   = { newbalances = {"lucidity"}, oldbalances = {"herb","focus"}},
+  majorinsanity     = { newbalances = {"lucidity"}, oldbalances = {"herb","focus"}},
+  moderateinsanity  = { newbalances = {"lucidity"}, oldbalances = {"herb","focus"}},
+  slightinsanity    = { newbalances = {"lucidity"}, oldbalances = {"herb","focus"}},
+  clotleftshoulder  = { newbalances = {"wafer"}, oldbalances = {"herb"}},
+  clotrightshoulder = { newbalances = {"wafer"}, oldbalances = {"herb"}},
+  clotlefthip       = { newbalances = {"wafer"}, oldbalances = {"herb"}},
+  clotrighthip      = { newbalances = {"wafer"}, oldbalances = {"herb"}},
+  completelyaurawarped = { newbalances = {"steam"}, oldbalances = {"herb"}, replaces = {"aurawarp"}},
+  massivelyaurawarped  = { newbalances = {"steam"}, oldbalances = {"herb"}, replaces = {"aurawarp"}},
+  aurawarped           = { newbalances = {"steam"}, oldbalances = {"herb"}, replaces = {"aurawarp"}},
+  moderatelyaurawarped = { newbalances = {"steam"}, oldbalances = {"herb"}, replaces = {"aurawarp"}},
+  slightlyaurawarped   = { newbalances = {"steam"}, oldbalances = {"herb"}, replaces = {"aurawarp"}},
 }
 sk.overhaulredirects = {}
 
@@ -605,7 +665,32 @@ signals.systemstart:connect(function ()
   end
 end)
 
+-- load the focus list
+signals.systemstart:connect(function ()
+  local conf_path = getMudletHomeDir().."/m&m/config/focus"
+
+  if lfs.attributes(conf_path) then
+    local t = {}
+    table.load(conf_path, t)
+    update(me.focus, t)
+  end
+end)
+
+signals.systemstart:connect(function ()
+  local conf_path = getMudletHomeDir().."/m&m/config/artifacts"
+
+  if lfs.attributes(conf_path) then
+    local t = {}
+    table.load(conf_path, t)
+    update(me.artifacts, t)
+  end
+end)
+
+
 signals.saveconfig:connect(function () table.save(getMudletHomeDir() .. "/m&m/config/lustlist", me.lustlist) end)
+
+signals.saveconfig:connect(function () table.save(getMudletHomeDir() .. "/m&m/config/focus", me.focus) end)
+signals.saveconfig:connect(function () table.save(getMudletHomeDir() .. "/m&m/config/artifacts", me.artifacts) end)
 
 -- load the ignore list
 signals.systemstart:connect(function ()
@@ -696,3 +781,20 @@ signals.systemstart:connect(function ()
     echof("Enabled Overhaul mode for %s affliction%s.", concatand(enabledaffs), #enabledaffs == 1 and '' or 's')
   end
 end)
+
+sk.arena_areas = {
+  --Gaudiguch
+  ["Pyrodome of the Kaleidoscopic Trials"] = true,
+  --Hallifax
+  ["the Skylark Commemorative Demiplane"] = true,
+  --Glomdoring
+  ["the Shadowvale Arena"] = true,
+  --Serenwilde
+  ["the Glade of Champions"] = true,
+  --New Celest
+  ["the Pearl of the Amberle"] = true,
+  --Magnagora
+  ["the Midnight Coliseum"] = true,
+  --Avenger
+  ["the Klangratch Tourny Fields"] = true
+}

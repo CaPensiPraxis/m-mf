@@ -39,6 +39,10 @@
 #  return "dict." .. what .. ".wafer"
 #end
 
+#local function encodeice (what)
+#  return "dict." .. what .. ".ice"
+#end
+
 #local function encodem (what)
 #  return "dict." .. what .. ".misc"
 #end
@@ -133,9 +137,27 @@ end
 
 function valid.symp_tangle()
   if not sys.sync then
-    sk.tangle_symptom()
+    checkaction(dict.prone.misc)
+    if actions.prone_misc then
+      lifevision.add(actions.prone_misc.p, "webbed")
+    else
+      sk.tangle_symptom()
+    end
   else
     valid.simpletangle()
+  end
+end
+
+function valid.symp_roped()
+  if not sys.sync then
+    checkaction(dict.prone.misc)
+    if actions.prone_misc then
+      lifevision.add(actions.prone_misc.p, "roped")
+    else
+      sk.roped_symptom()
+    end
+  else
+    valid.simpleroped()
   end
 end
 
@@ -144,7 +166,12 @@ function valid.symp_crucified()
 end
 
 function valid.symp_shackled()
-  sk.shackled_symptom()
+    checkaction(dict.prone.misc)
+    if actions.prone_misc then
+      lifevision.add(actions.prone_misc.p, "shackled")
+    else
+      sk.shackled_symptom()
+    end
 end
 
 function valid.symp_stupidity()
@@ -201,6 +228,9 @@ for _,k in ipairs({"rightarm", "leftarm", "leftleg", "rightleg", "chest", "gut",
     assert(type(howmuch) == "number", "mm.valid.wounds"..k.."_add: how much damage do you want to add?")
 
     local amount = dict["light"..k].count + howmuch
+    if conf.gmcpvitals then
+      amount = howmuch
+    end
     valid["simple"..sk.get_wound_level(amount)..k](amount)
   end
 end
@@ -237,6 +267,11 @@ end
 
 function valid.spiders_all_overme()
   valid.proper_fear()
+  valid.simplehallucinating()
+end
+
+function valid.stun_hallucination()
+  valid.simplestun()
   valid.simplehallucinating()
 end
 
@@ -301,6 +336,17 @@ function valid.holythroat()
   if actions.checkslitthroat_misc then
     lifevision.add(actions.checkslitthroat_misc.p, "holythroat")
   end
+end
+
+function valid.hasdamagedthroat()
+  if actions.checkdamagedthroat_misc then
+    lifevision.add(actions.checkdamagedthroat_misc.p, "has")
+    return
+  end
+
+  local r = findbybals("lucidity", "health")
+  if not r then return end
+  lifevision.add(actions.damagedthroat_aff.p)
 end
 
 function valid.proper_collapsedlungs()
@@ -567,6 +613,16 @@ function valid.proper_slitthroat()
   end
 end
 
+function valid.proper_damagedthroat()
+  if not conf.aillusion then
+    valid.simpledamagedthroat()
+  else
+    echo("CHECKING DAMAGED THROAT")
+    checkaction(dict.checkdamagedthroat.aff, true)
+    lifevision.add(actions.checkdamagedthroat_aff.p)
+  end
+end
+
 function valid.proper_throatlock()
   -- only TK's can throatlock, and they typically do it in a stun combo - so if we're stunned, then assume yes
   -- to cure out asap instead of checking
@@ -624,6 +680,33 @@ function valid.parry_none()
     lifevision.add(actions.doparry_misc.p, "none")
   end
 end
+
+vm.aurawarps = {"slightlyaurawarped", "moderatelyaurawarped", "aurawarped", "massivelyaurawarped", "completelyaurawarped"}
+
+vm.next_aurawarp = function()
+  for i,v in ipairs(vm.aurawarps) do
+    if affs[v] then return vm.aurawarps[i+1] or "completelyaurawarped" end
+  end
+end
+
+vm.previous_aurawarp = function()
+  for i,v in ipairs(vm.aurawarps) do
+    if affs[v] then return vm.aurawarps[i-1] or nil end
+  end
+end
+
+function valid.aurawarp_added()
+  local aff = vm.next_aurawarp()
+
+  if not aff then aff = "slightlyaurawarped" end
+  checkaction(dict[aff].aff, true)
+
+  if actions[aff .. "_aff"] then
+    lifevision.add(actions[aff .. "_aff"].p)
+  end
+end
+
+valid.affmsg_warpedaura = valid.aurawarp_added
 
 vm.timewarps = {"minortimewarp", "moderatetimewarp", "majortimewarp", "massivetimewarp"}
 
@@ -792,6 +875,22 @@ function valid.bad_legs()
   valid.simpleunknownany()
 end
 
+function valid.symp_damagedleftleg()
+  valid.simpledamagedleftleg()
+end
+
+function valid.symp_damagedrightleg()
+  valid.simpledamagedrightleg()
+end
+
+function valid.symp_damagedleftarm()
+  valid.simpledamagedleftarm()
+end
+
+function valid.symp_damagedrightarm()
+  valid.simpledamagedrightarm()
+end
+
 function valid.symp_crushedwindpipe()
   if affs.crushedwindpipe then return end
   if not conf.aillusion then
@@ -836,7 +935,41 @@ function valid.symp_paralysis()
   if not affs.severedspine then
     valid.simpleparalysis()
   end
+  if actions.checkparalysis_misc then
+    killaction(dict.paralysis.misc)
+  end
 end
+
+function valid.checkparalysis_paralysis()
+  if actions.checkparalysis_misc then
+    lifevision.add(actions.checkparalysis_misc.p, "paralyzed")
+  end
+  disableTrigger("m&m check paralysis")
+end
+
+function valid.checkparalysis_tangled()
+  if actions.checkparalysis_misc then
+    lifevision.add(actions.checkparalysis_misc.p, "onclear")
+    valid.simpletangle()
+  end
+  disableTrigger("m&m check paralysis")
+end
+
+function valid.checkparalysis_noballs()
+  if actions.checkparalysis_misc then
+    lifevision.add(actions.checkparalysis_misc.p, "onclear")
+  end
+  disableTrigger("m&m check paralysis")
+end
+
+function valid.checkparalysis_impale()
+  if actions.checkparalysis_misc then
+    lifevision.add(actions.checkparalysis_misc.p, "onclear")
+  end
+  disableTrigger("m&m check paralysis")
+end
+
+
 
 function valid.symp_shatteredankle()
   if not conf.aillusion or doingaction "prone" then
@@ -884,7 +1017,7 @@ function valid.illuminated_woreoff()
   end
 end
 
-#for _, aff in ipairs({"darkseed", "enfeeble", "timeechoes", "oracle", "succumb", "phantom", "bedevil", "avengingangel", "puncturedaura", "mildallergy", "darkfate", "sightstealer", "illusorywounds"}) do
+#for _, aff in ipairs({"darkseed", "enfeeble", "timeechoes", "oracle", "succumb", "phantom", "bedevil", "avengingangel", "puncturedaura", "mildallergy", "darkfate", "sightstealer", "illusorywounds", "anesthesia","bentaura"}) do
 function valid.$(aff)_woreoff()
   checkaction(dict.$(aff).waitingfor, true)
   if actions.$(aff)_waitingfor then
@@ -894,8 +1027,8 @@ end
 #end
 
 function valid.attraction_woreoff()
-  checkaction(dict.attraction.herb, true)
-  lifevision.add(actions.attraction_herb.p, "woreoff")
+  checkaction(dict.attraction.wafer, true)
+  lifevision.add(actions.attraction_wafer.p, "woreoff")
 end
 
 function valid.choke_woreoff()
@@ -916,6 +1049,13 @@ function valid.scarab_woreoff()
   checkaction(dict.scarab.waitingfor)
   if actions.scarab_waitingfor then
     lifevision.add(actions.scarab_waitingfor.p)
+  end
+end
+
+function valid.echoes_woreoff()
+  checkaction(dict.echoes.waitingfor)
+  if actions.echoes_waitingfor then
+    lifevision.add(actions.echoes_waitingfor.p)
   end
 end
 
@@ -962,7 +1102,7 @@ function valid.rainbowpattern_woreoff()
 end
 
 function valid.aeon_woreoff()
-  local result = checkany(dict.aeon.purgative, dict.aeon.herb)
+  local result = checkany(dict.aeon.purgative, dict.aeon.herb, dict.aeon.steam, dict.aeon.physical)
 
   if not result then
     checkaction(dict.aeon.gone, true)
@@ -970,6 +1110,39 @@ function valid.aeon_woreoff()
   else
     sip_cure = true
     lifevision.add(actions[result.name].p)
+  end
+end
+
+function valid.adrenaline_cured_aeon()
+  checkaction(dict.aeon.physical, true)
+  if actions.aeon_physical then 
+    lifevision.add(actions.aeon_physical.p)
+  end
+end
+
+function valid.adrenaline_already()
+  checkaction(dict.quicksilver.physical, true)
+  if actions.quicksilver_physical then
+    lifevision.add(actions.quicksilver_physical.p, "oncompleted", true)
+  end
+
+  checkaction(dict.aeon.physical, true)
+  if actions.aeon_physical then
+    lifevision.add(actions.aeon_physical.p, "already")
+  end
+end
+
+function valid.adrenaline_quicksilver()
+  checkaction(dict.quicksilver.physical, true)
+  if actions.quicksilver_physical then
+    lifevision.add(actions.quicksilver_physical.p)
+    return
+  end
+
+  checkaction(dict.aeon.physical, true)
+  if actions.aeon_physical then
+    lifevision.add(actions.aeon_physical.p, "quicksilver")
+    return
   end
 end
 
@@ -1209,7 +1382,7 @@ function valid.sippedbromide()
   end
 end
 
-#for _, balance in ipairs{"herb", "scroll", "sparkle", "focus", "allheale", "tea", "sip", "salve", "purgative", "lucidity", "steam", "wafer"} do
+#for _, balance in ipairs{"herb", "scroll", "sparkle", "focus", "allheale", "tea", "sip", "salve", "purgative", "lucidity", "steam", "wafer", "ice"} do
   function valid.got$(balance)()
     checkaction(dict.gotbalance.happened, true)
     dict.gotbalance.tempmap[#dict.gotbalance.tempmap+1] = "$(balance)" -- hack to allow multiple balances at once
@@ -1244,6 +1417,12 @@ function valid.clot1()
     lifevision.add(actions.bleeding_misc.p)
   end
 
+
+  checkaction(dict.bruising.misc)
+  if actions.bruising_misc then
+    lifevision.add(actions.bruising_misc.p)
+  end
+
   if conf.gagclot and not sys.sync then deleteLineP() end
 end
 
@@ -1255,11 +1434,6 @@ function valid.symp_haemophilia()
   end
 end
 
-function valid.symp_tangled()
-  if conf.aillusion or affs.tangle or affs.roped or affs.shackled then return end
-
-  valid.simpletangle()
-end
 
 function valid.symp_slicedforehead()
   if not conf.aillusion then
@@ -1367,8 +1541,42 @@ function valid.missing_herb()
   end
 end
 
+-- a function to stop any light* actions and put all current non-artefact pipes on ignore
+function missing_tinderbox()
+  -- find which pipes were we lighting and kill those actions. We we were lighting at least one, figure out which pipes are non-arty, get a list, put them on ignore and say which ones we've added to ignore now
+
+  local gotaction
+  if actions.lightvalerian_physical then
+    killaction(dict.lightvalerian.physical); gotaction = true
+  end
+  if actions.lightelm_physical then
+    killaction(dict.lightelm.physical); gotaction = true
+  end
+  if actions.lightskullcap_physical then
+    killaction(dict.lightskullcap.physical); gotaction = true
+  end
+
+  -- if we weren't lighting - then... this might not be real!
+  if not gotaction then return end
+
+  -- find out which pipes are not artefact & ignore
+  local realthing, assumedname = {}, {}
+  for id = 1, #pipes.pnames do
+    local herb, pipe = pipes.pnames[id], pipes[pipes.pnames[id]]
+    if not pipe.arty and not ignore["light"..herb] then
+      realthing[#realthing+1] = "light"..herb
+      assumedname[#assumedname+1] = pipe.filledwith
+      setignore("light"..herb, { because = "you were missing a tinderbox" })
+    end
+  end
+
+  if realthing[1] then
+    echo"\n" echof("Looks like you don't have a tinderbox! I've put non-artefact pipes - %s on the ignore list (under the names of %s). To unignore them, check vshow ignore.", concatand(assumedname), concatand(realthing))
+  end
+end
+
 function valid.symp_anorexia()
-  local doingthings = findbybals({"sip", "purgative", "allheale", "herb", "sparkle"})
+  local doingthings = findbybals({"sip", "purgative", "allheale", "herb", "sparkle", "lucidity","wafer"})
 
   if conf.aillusion and not (doingthings or actions.quicksilver_misc) then return end
 
@@ -1400,6 +1608,12 @@ function valid.clot2()
   checkaction(dict.bleeding.misc)
   if actions.bleeding_misc then
     lifevision.add(actions.bleeding_misc.p, "oncured")
+  end
+
+
+  checkaction(dict.bruising.misc)
+  if actions.bruising_misc then
+    lifevision.add(actions.bruising_misc.p, "oncured")
   end
 
   if conf.gagclot and not sys.sync then deleteLine() end
@@ -1543,6 +1757,74 @@ function valid.salve_still_fourthdegreeburn()
   end
 end
 
+function valid.ice_cured_ablaze()
+  local result = checkany(dict.ablaze.ice, dict.firstdegreeburn.ice, dict.seconddegreeburn.ice, dict.thirddegreeburn.ice, dict.fourthdegreeburn.ice)
+  if not result then return end
+
+  apply_ice = true
+  lifevision.add(actions.ablaze_ice.p)
+end
+
+function valid.ice_cured_firstdegreeburn()
+  if actions.firstdegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.firstdegreeburn_ice.p)
+  end
+end
+
+function valid.ice_still_firstdegreeburn()
+  if actions.firstdegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.firstdegreeburn_ice.p, "stillgot")
+  elseif actions.seconddegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.seconddegreeburn_ice.p)
+  end
+end
+
+function valid.ice_still_seconddegreeburn()
+  if actions.seconddegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.seconddegreeburn_ice.p, "stillgot")
+  elseif actions.thirddegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.thirddegreeburn_ice.p)
+  end
+end
+
+function valid.ice_still_thirddegreeburn()
+  if actions.thirddegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.thirddegreeburn_ice.p, "stillgot")
+  elseif actions.fourthdegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.fourthdegreeburn_ice.p)
+  end
+end
+
+function valid.ice_still_fourthdegreeburn()
+  if actions.fourthdegreeburn_ice then
+    apply_ice = true
+    lifevision.add(actions.fourthdegreeburn_ice.p, "stillgot")
+  end
+end
+
+function valid.steam_still_massivetimewarp()
+  local result = checkany(dict.achromaticaura.steam, dict.aeon.steam, dict.disloyalty.steam, dict.healthleech.steam, dict.luminosity.steam, dict.manabarbs.steam, dict.pacifism.steam, dict.egovice.steam, dict.slickness.steam, dict.powerspikes.steam, dict.massivetimewarp.steam, dict.majortimewarp.steam, dict.moderatetimewarp.steam, dict.minortimewarp.steam, dict.slightlyaurawarped.steam, dict.moderatelyaurawarped.steam, dict.aurawarped.steam, dict.massivelyaurawarped.steam, dict.completelyaurawarped.steam)
+
+    if not result then return end
+
+    lifevision.add(actions.massivetimewarp.p, "stillgot")
+end
+
+function valid.steam_still_completelyaurawarped()
+  local result = checkany(dict.achromaticaura.steam, dict.aeon.steam, dict.disloyalty.steam, dict.healthleech.steam, dict.luminosity.steam, dict.manabarbs.steam, dict.pacifism.steam, dict.egovice.steam, dict.slickness.steam, dict.powerspikes.steam, dict.massivetimewarp.steam, dict.majortimewarp.steam, dict.moderatetimewarp.steam, dict.minortimewarp.steam, dict.slightlyaurawarped.steam, dict.moderatelyaurawarped.steam, dict.aurawarped.steam, dict.massivelyaurawarped.steam, dict.completelyaurawarped.steam)
+
+    if not result then return end
+
+    lifevision.add(actions.completelyaurawarped.p, "stillgot")
+end
+
 #for _, item in ipairs{"faeleaf", "myrtle", "coltsfoot", "steam"} do
 function valid.fill$(item)()
   checkaction(dict.fill$(item).physical)
@@ -1580,15 +1862,62 @@ function valid.litallpipes()
   end
 end
 
+local function isFocusLine(line)
+  local t = {
+    "You have no beast here.",
+    "A nimbus of light surrounds",
+    "You focus on curing",
+    "You call upon your aetheric power to focus on curing",
+    "You are not afflicted with",
+  }
+
+  for _,str in ipairs(t) do
+    if string.starts(line, str) then
+      return true
+    end
+  end
+  return false
+end
+
+
 herb_cure = false
 
 function valid.ate1()
   if paragraph_length == 1 then
     herb_cure = false
   end
+
+  -- see if we need to enable arena mode for some reason
+  if conf.autoarena then
+    local t = sk.arena_areas
+    local area = atcp.RoomArea or (gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.area)
+    if area and t[area] and not conf.arena then
+      conf.arena = true
+      raiseEvent("m&m config changed", "arena")
+      prompttrigger("arena echo", function()
+        echo'\n'echof("Looks like you're actually in the arena - enabled arena mode.\n") showprompt()
+      end)
+    elseif area and not t[area] and conf.arena then
+      conf.arena = false
+      raiseEvent("m&m config changed", "arena")
+      prompttrigger("arena echo", function()
+        echo'\n'echof("Looks like you're not actually in the arena - disabled arena mode.\n") showprompt()
+      end)
+    end
+  end
 end
 
 function valid.ate2()
+  if not isPrompt() then
+    setTriggerStayOpen("Ate", 1)
+    return
+  end
+  --account for new focus line
+  --[[if isFocusLine(line) then
+    setTriggerStayOpen("Ate", 1)
+    return
+  end]]
+
   if not herb_cure then
     if find_until_last_paragraph("You eat a wafer of purity dust.") and findbybal("wafer") then
       lifevision.add(actions[findbybal("wafer").name].p, "empty")
@@ -1607,19 +1936,35 @@ function valid.ate2()
 end
 
 local sip_cure = false
+local multiple_sip_lines = false
 
 function valid.sip1()
   local has_sip = pl.tablex.find_if(lifevision.l._keys, function(what) return what:find("_sip", 1, true) end) and true or false
 
   -- don't re-set it in the same 'sipping'. sip1 can go off multiple times now
-  if not has_sip then
+  if not has_sip and not multiple_sip_lines then
     sip_cure = false
   end
 end
 
 function valid.sip2()
-  if sip_cure then return end
-  sip_cure = false
+  --account for any line that until the prompt
+  if not isPrompt() then
+    multiple_sip_lines = true
+    setTriggerStayOpen("Sip", 1)
+    return
+  end
+  --[[if isFocusLine(line) then
+    setTriggerStayOpen("Sip", 1)
+    return
+  end
+
+  if insanitycheck and isPrompt() then return end]]
+  multiple_sip_lines = false
+  if sip_cure then 
+    sip_cure = false
+    return
+  end
 
   if find_until_last_paragraph("lucidity slush", true) and findbybal("lucidity") then
     lifevision.add(actions[findbybal("lucidity").name].p, "empty")
@@ -1670,6 +2015,25 @@ arnica_cure = false
 
 function valid.arnica1()
   arnica_cure = false
+
+  -- see if we need to enable arena mode for some reason
+  if conf.autoarena then
+    local t = sk.arena_areas
+    local area = atcp.RoomArea or (gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.area)
+    if area and t[area] and not conf.arena then
+      conf.arena = true
+      raiseEvent("m&m config changed", "arena")
+      prompttrigger("arena echo", function()
+        echo'\n'echof("Looks like you're actually in the arena - enabled arena mode.\n") showprompt()
+      end)
+    elseif area and not t[area] and conf.arena then
+      conf.arena = false
+      raiseEvent("m&m config changed", "arena")
+      prompttrigger("arena echo", function()
+        echo'\n'echof("Looks like you're not actually in the arena - disabled arena mode.\n") showprompt()
+      end)
+    end
+  end
 end
 
 function valid.arnica2()
@@ -1700,13 +2064,83 @@ function valid.apply2()
   apply_cure = false
 end
 
-smoke_cure = false
+apply_ice = false
 
-function valid.smoke1()
-  smoke_cure = false
+function valid.applyice1()
+  if ice_gmcp then
+    ice_gmcp = nil
+  else
+    apply_ice = false
+  end
 end
 
+function valid.applyice2()
+  if string.find(line, "curing your afflictions") then
+    return
+  end
+
+  if not apply_ice then
+    local r = findbybal("ice")
+    if not r then return end
+
+    lifevision.add(actions[r.name].p, "empty")
+  end
+
+  apply_ice = false
+end
+
+smoke_cure = false
+multiple_smoke_lines = false
+
+function valid.smoke1()
+  if not multiple_smoke_lines then
+    smoke_cure = false
+  end
+
+  -- see if we need to enable arena mode for some reason
+  if conf.autoarena then
+    local t = sk.arena_areas
+    local area = atcp.RoomArea or (gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.area)
+    if area and t[area] and not conf.arena then
+      conf.arena = true
+      raiseEvent("m&m config changed", "arena")
+      prompttrigger("arena echo", function()
+        echo'\n'echof("Looks like you're actually in the arena - enabled arena mode.\n") showprompt()
+      end)
+    elseif area and not t[area] and conf.arena then
+      conf.arena = false
+      raiseEvent("m&m config changed", "arena")
+      prompttrigger("arena echo", function()
+        echo'\n'echof("Looks like you're not actually in the arena - disabled arena mode.\n") showprompt()
+      end)
+    end
+  end
+end
+
+
 function valid.smoke2()
+  -- prevent extra lines from setting off empty cures
+  if not isPrompt() then
+    multiple_smoke_lines = true
+    setTriggerStayOpen("Smoke", 1)
+    return
+  end
+  multiple_smoke_lines = false
+  --account for new focus line
+  --[[if isFocusLine(line) or line == "A strange vibration prevents you from healing auric ailments."
+   then
+    setTriggerStayOpen("Smoke", 1)
+    return
+  end
+
+  if timewarpcheck and isPrompt() then
+    timewarpcheck = nil
+    return
+  end]]
+  if smoke_cure then
+    smoke_cure = false
+    return
+  end
   if not smoke_cure then
     if actions.rebounding_misc then -- smoked rebounding?  No special line comes from it
       lifevision.add(actions.rebounding_misc.p)
@@ -1714,12 +2148,12 @@ function valid.smoke2()
     end
 
     local r = findbybals{"steam", "herb"}
-    if not r then return end
+    if not r then 
+      return 
+    end
     -- take in the first action, as it is most likely to be the steam smoke one with overhaul
     lifevision.add(actions[select(2, next(r)).name].p, "empty", "smoked")
   end
-
-  smoke_cure = false
 end
 
 function valid.pipe_ran_out()
@@ -1806,6 +2240,14 @@ function valid.plant_had_no_effect()
   lifevision.add(actions[r.name].p, "noeffect")
 end
 
+function valid.wafer_had_no_effect()
+  local r = findbybal("wafer")
+  if not r then return end
+
+  herb_cure = true
+  lifevision.add(actions[r.name].p, "noeffect")
+end
+
 function valid.salve_slickness()
   if actions.checkslickness_misc then
     lifevision.add(actions.checkslickness_misc.p, "slicky")
@@ -1829,6 +2271,15 @@ function valid.potion_slickness()
     local r = findbybal("sip") -- applying for wounds
     valid.simpleslickness()
     killaction(dict[r.action_name].sip)
+  end
+end
+
+function valid.ice_slickness()
+  local r = findbybal("ice")
+  if r then
+    apply_ice = true
+    valid.simpleslickness()
+    killaction(dict[r.action_name].ice)
   end
 end
 
@@ -2062,7 +2513,7 @@ function valid.unlit_pipe()
 end
 
 function valid.maestoso_ruined()
-  local r = findbybal("herb")
+  local r = findbybals("herb", "steam")
   if not r then return end
 
   lifevision.add(actions[r.name].p, "maestoso")
@@ -2113,6 +2564,18 @@ function valid.hex_thrown()
   else
     valid.simpleunknownany(math.random(1,2))
   end
+end
+
+function valid.masked_runes()
+  valid.proper_paralysis()
+  valid.check_recklessness()
+  valid.simpleunknownlucidity()
+end
+
+function valid.tp_attack()
+  valid.proper_paralysis()
+  valid.check_recklessness()
+  valid.simpleunknownlucidity()
 end
 
 function valid.shofangi_rake()
@@ -2321,6 +2784,16 @@ function valid.athletics_forwardflip()
   valid["simplecrippled"..multimatches[2][2]..multimatches[2][3]]()
 end
 
+function valid.winning1()
+  killTrigger(winningTrigger)
+  winning1Timer = tempTimer(math.random(10,30), [[mm.valid.winning1TimerAct()]])
+end
+
+function valid.winning1TimerAct()
+  cecho("\n<white>Psssst. Are you ready to activate the super secret saiyan power? If so, just celebrate a victory with yourself.")
+  winning1Trigger = tempExactMatchTrigger("You look around for someone to bump fists with, but sadly, you have no friends.", [[mm.valid.winning2()]])
+end
+
 function valid.geomancy_tremor()
   if not defc.levitation then
     valid.proper_prone()
@@ -2331,9 +2804,35 @@ function valid.geomancy_tremor()
   end
 end
 
+function sk.proper_recklessness()
+  local t = gmcp.Char.Vitals
+  if t.hp == t.maxhp and t.mp == t.maxmp and t.ego == t.maxego and t.pow == t.maxpow then
+    valid.simplerecklessness()
+  end
+  signals.before_prompt_processing:block(sk.proper_recklessness)
+end
+signals.before_prompt_processing:connect(sk.proper_recklessness)
+signals.before_prompt_processing:block(sk.proper_recklessness)
+
+function valid.check_recklessness()
+  signals.before_prompt_processing:unblock(sk.proper_recklessness)
+end
+
+function valid.cancel_checkrecklessness()
+  signals.before_prompt_processing:block(sk.proper_recklessness)
+end
+
+
 function sk.proper_paralysis()
-  if pflags.p then
+  if not pflags.p then 
+    signals.before_prompt_processing:block(sk.proper_paralysis)
+    return 
+  end
+  if (me.prone and not me.lastprone) or mm.affl.sap or mm.affl.aeon then
     valid.simpleparalysis()
+  else
+    checkaction(dict.checkparalysis.aff, true)
+    lifevision.add(actions.checkparalysis_aff.p)
   end
   signals.before_prompt_processing:block(sk.proper_paralysis)
 end
@@ -2342,6 +2841,30 @@ signals.before_prompt_processing:block(sk.proper_paralysis)
 
 function valid.proper_paralysis()
   signals.before_prompt_processing:unblock(sk.proper_paralysis)
+end
+
+function valid.not_prone()
+  --check paralysis
+  if affs.paralysis then
+    removeaff("paralysis")
+  end
+
+  if affs.tangle then
+    removeaff("tangle")
+  end
+
+  if affs.prone then
+    removeaff("prone")
+  end
+
+  if affs.impale then
+    removeaff("impale")
+  end
+
+  if affs.crucified then
+    removeaff("crucified")
+  end
+
 end
 
 function sk.proper_severedspine()
@@ -2779,6 +3302,52 @@ function valid.empty_light()
   end
 end
 
+function valid.empty_smoke()
+  local r = checkany(dict.achromaticaura.steam, dict.aeon.steam, dict.disloyalty.steam, dict.egovice.steam, dict.healtheech.steam, dict.manabarbs.steam, dict.pacifism.steam, dict.powerspikes.steam, dict.slickness.steam, dict.massivetimewarp.steam, dict.majortimewarp.steam, dict.moderatetimewarp.steam, dict.minortimewarp.steam, dict.slightlyaurawarped.steam, dict.moderatelyaurawarped.steam, dict.aurawarped.steam, dict.massivelyaurawarped.steam, dict.completelyaurawarped.steam)
+
+  if r then
+    killaction(dict[r.action_name].steam)
+    pipes.steam.puffs = 0
+    if not pipes.steam.arty then
+      pipes.steam.lit = false
+    end
+    return
+  end
+
+  r = checkany(dict.hemiplegyleft.herb, dict.hemiplegyright.herb, dict.hemiplegylower.herb, dict.piercedleftarm.herb, dict.piercedrightarm.herb, dict.piercedleftleg.herb, dict.piercedrightleg.herb, dict.crushedwindpipe.herb, dict.severedphrenic.herb)
+
+  if r then
+    killaction(dict[r.action_name].herb)
+    pipes.myrtle.puffs = 0
+    if not pipes.myrtle.arty then
+      pipes.myrtle.lit = false
+    end
+    return
+  end
+
+  r = checkany(dict.impatience.herb)
+
+  if r then
+    killaction(dict[r.action_name].herb)
+    pipes.coltsfoot.puffs = 0
+    if not pipes.coltsfoot.arty then
+      pipes.coltsfoot.lit = false
+    end
+    return
+  end
+
+  r = checkany(dict.rebounding.misc)
+
+  if r then
+    killaction(dict[r.action_name].misc)
+    pipes.faeleaf.puffs = 0
+    if not pipes.faeleaf.arty then
+      pipes.faeleaf.lit = false
+    end
+    return
+  end
+end
+
 function valid.healed_completely()
   local result = checkany(
     dict.lighthead.sip, dict.mediumhead.sip, dict.heavyhead.sip, dict.criticalhead.sip,
@@ -2794,6 +3363,28 @@ function valid.healed_completely()
     if not limb then limb = {name = "light"..name} end
     checkaction (dict[limb.name].sip, true)
     lifevision.add(actions[limb.name.."_sip"].p, "completely")
+  end
+end
+
+function valid.ice_healed_completely()
+  local result = checkany(
+    dict.lighthead.ice, dict.heavyhead.ice, dict.criticalhead.ice, dict.lightrightarm.ice, dict.heavyrightarm.ice, dict.criticalrightarm.ice, dict.lightleftarm.ice, dict.heavyleftarm.ice, dict.criticalleftarm.ice, dict.lightleftleg.ice, dict.heavyleftleg.ice, dict.criticalleftleg.ice,
+    dict.lightrightleg.ice, dict.heavyrightleg.ice, dict.criticalrightleg.ice, dict.lightchest.ice, dict.heavychest.ice, dict.criticalchest.ice, dict.lightgut.ice, dict.heavygut.ice, dict.criticalgut.ice)
+
+  if result and actions[result.name] then
+    ice_gmcp = true
+    apply_ice = true
+    lifevision.add(actions[result.name].p, "completely")
+  end
+end
+
+function valid.ice_curingaff()
+  local result = checkany(
+    dict.damagedskull.ice, dict.damagedthroat.ice, dict.collapsedlungs.ice, dict.crushedchest.ice, dict.internalbleeding.ice, dict.damagedorgans.ice, dict.damagedleftarm.ice, dict.mutilatedleftarm.ice, dict.damagedrightarm.ice, dict.mutilatedrightarm.ice, dict.damagedleftleg.ice, dict.mutilatedleftleg.ice, dict.damagedrightleg.ice, dict.mutilatedrightleg.ice)
+
+  if result and actions[result.name] then
+    apply_ice = true
+    lifevision.add(actions[result.name].p, "empty")
   end
 end
 
@@ -2826,6 +3417,17 @@ function valid.appliedhealth_nouse()
   end
 end
 
+function valid.ice_nouse()
+  local result = checkany(
+    dict.lighthead.ice, dict.heavyhead.ice, dict.criticalhead.ice, dict.lightrightarm.ice, dict.heavyrightarm.ice, dict.criticalrightarm.ice, dict.lightleftarm.ice, dict.heavyleftarm.ice, dict.criticalleftarm.ice, dict.lightleftleg.ice, dict.heavyleftleg.ice, dict.criticalleftleg.ice, dict.lightrightleg.ice, dict.heavyrightleg.ice, dict.criticalrightleg.ice, dict.lightchest.ice, dict.heavychest.ice, dict.criticalchest.ice, dict.lightgut.ice, dict.heavygut.ice, dict.criticalgut.ice, dict.damagedskull.ice, dict.damagedthroat.ice, dict.collapsedlungs.ice, dict.crushedchest.ice, dict.damagedorgans.ice, dict.internalbleeding.ice, dict.damagedleftarm.ice, dict.mutilatedleftarm.ice, dict.damagedrightarm.ice, dict.mutilatedrightarm.ice, dict.damagedleftleg.ice, dict.mutilatedleftleg.ice, dict.damagedrightleg.ice, dict.mutilatedrightleg.ice, dict.fourthdegreeburn.ice, dict.thirddegreeburn.ice, dict.seconddegreeburn.ice, dict.firstdegreeburn.ice, dict.ablaze.ice)
+  if not result then return end
+
+  if actions[result.name] then
+    apply_ice = true
+    lifevision.add(actions[result.name].p, "nouse")
+  end
+end
+
 function valid.healed_partially()
  local result = checkany(
     dict.lighthead.sip, dict.mediumhead.sip, dict.heavyhead.sip, dict.criticalhead.sip,
@@ -2845,6 +3447,17 @@ function valid.healed_partially()
   end
 end
 
+function valid.ice_healed_partially()
+ local result = checkany(
+    dict.lighthead.ice, dict.heavyhead.ice, dict.criticalhead.ice, dict.lightrightarm.ice, dict.heavyrightarm.ice, dict.criticalrightarm.ice, dict.lightleftarm.ice, dict.heavyleftarm.ice, dict.criticalleftarm.ice, dict.lightleftleg.ice, dict.heavyleftleg.ice, dict.criticalleftleg.ice, dict.lightrightleg.ice, dict.heavyrightleg.ice, dict.criticalrightleg.ice, dict.lightchest.ice, dict.heavychest.ice, dict.criticalchest.ice, dict.lightgut.ice, dict.heavygut.ice, dict.criticalgut.ice)
+
+  if result and actions[result.name] then
+    ice_gmcp = true
+    apply_ice = true
+    lifevision.add(actions[result.name].p, "partially")
+  end
+end
+
 -- no effect should add both affs...
 function valid.healed_noeffect()
   local result = checkany(
@@ -2854,6 +3467,18 @@ function valid.healed_noeffect()
   if not result then return end
 
   if actions[result.name] then
+    lifevision.add(actions[result.name].p, "noeffect")
+  end
+end
+
+--no effect should add both affs...
+function valid.ice_noeffect()
+  local result = checkany(
+    dict.lighthead.ice, dict.heavyhead.ice, dict.criticalhead.ice, dict.lightrightarm.ice, dict.heavyrightarm.ice, dict.criticalrightarm.ice, dict.lightleftarm.ice, dict.heavyleftarm.ice, dict.criticalleftarm.ice, dict.lightleftleg.ice, dict.heavyleftleg.ice, dict.criticalleftleg.ice, dict.lightrightleg.ice, dict.heavyrightleg.ice, dict.criticalrightleg.ice, dict.lightchest.ice, dict.heavychest.ice, dict.criticalchest.ice, dict.lightgut.ice, dict.heavygut.ice, dict.criticalgut.ice, dict.damagedskull.ice, dict.damagedthroat.ice, dict.collapsedlungs.ice, dict.crushedchest.ice, dict.damagedorgans.ice, dict.internalbleeding.ice, dict.damagedleftarm.ice, dict.mutilatedleftarm.ice, dict.damagedrightarm.ice, dict.mutilatedrightarm.ice, dict.damagedleftleg.ice, dict.mutilatedleftleg.ice, dict.damagedrightleg.ice, dict.mutilatedrightleg.ice, dict.fourthdegreeburn.ice, dict.thirddegreeburn.ice, dict.seconddegreeburn.ice, dict.firstdegreeburn.ice, dict.ablaze.ice)
+  if not result then return end
+
+  if actions[result.name] then
+    apply_ice = true
     lifevision.add(actions[result.name].p, "noeffect")
   end
 end
@@ -2884,6 +3509,10 @@ function valid.sippedhealth()
   if actions[result.name] then
     lifevision.add(actions[result.name].p)
   end
+end
+
+function valid.medicinebag_health()
+  valid.sippedhealth()
 end
 
 function valid.cured_vessel_health()
@@ -3359,7 +3988,7 @@ function valid.herbbanefail()
 end
 
 function valid.earachefail()
-  local result = checkany (dict.truedeaf.herb, dict.deaf.herb, dict.attraction.herb)
+  local result = checkany (dict.truedeaf.steam, dict.deaf.steam, dict.attraction.steam)
   if not result then return end
 
   herb_cure = true
@@ -3408,7 +4037,7 @@ end
 
 -- lucidity sips
 #for _, lucidity in pairs({
-#lucidity = {"epilepsy", "paranoia", "sensitivity", "confusion", "recklessness", "hallucinating", "clumsiness", "stupidity", "addiction"},
+#lucidity = {"epilepsy", "paranoia", "sensitivity", "confusion", "recklessness", "hallucinating", "clumsiness", "stupidity", "addiction", "anorexia", "massiveinsanity","majorinsanity","moderateinsanity","slightinsanity","unknownlucidity"},
 #}) do
 #local checkany_string = ""
 #local temp = {}
@@ -3439,7 +4068,7 @@ end
 
 -- steam puffs
 #for _, steam in pairs({
-#steam = {"egovice", "manabarbs", "achromaticaura", "powerspikes", "disloyalty", "pacifism", "illuminated", "healthleech", "aeon"},
+#steam = {"egovice", "manabarbs", "achromaticaura", "powerspikes", "disloyalty", "pacifism", "illuminated", "healthleech", "aeon", "slickness", "massivetimewarp","majortimewarp","moderatetimewarp","minortimewarp","completelyaurawarped","massivelyaurawarped","aurawarped","moderatelyaurawarped","slightlyaurawarped","unknownsteam"},
 #}) do
 #local checkany_string = ""
 #local temp = {}
@@ -3456,11 +4085,9 @@ function valid.steam_cured_$(aff)()
   if not result then return end
 
   smoke_cure = true
-  setTriggerStayOpen("Smoke", 1)
   if result.name == "$(aff)_steam" then
     lifevision.add(actions.$(aff)_steam.p)
   else
-    killaction(dict[result.action_name].steam)
     checkaction(dict.$(aff).steam, true)
     lifevision.add(dict.$(aff).steam)
   end
@@ -3469,9 +4096,51 @@ end
 #end
 #end
 
+function valid.steam_noaff(aff)
+  if aff == "luminosity" then
+    aff = "illuminated"
+  end
+
+  if not dict[aff].steam then
+    return
+  end
+
+  local result = checkany(dict[aff].steam)
+  if not result then return end
+  lifevision.add(dict[aff].steam)
+end
+
+function valid.lucidity_noaff(aff)
+  if aff == "hallucinations" then
+    aff = "hallucinating"
+  end
+
+  if not dict[aff].lucidity then
+    return
+  end
+
+  local result = checkany(dict[aff].lucidity)
+  if not result then return end
+  lifevision.add(dict[aff].lucidity)
+end
+
+function valid.wafer_noaff(aff)
+  if aff == "sickening" then
+    aff = "taintsick"
+  end
+
+  if not dict[aff].wafer then
+    return
+  end
+
+  local result = checkany(dict[aff].wafer)
+  if not result then return end
+  lifevision.add(dict[aff].wafer)
+end
+
 -- wafer nomnoms
 #for _, wafer in pairs({
-#wafer = {"paralysis", "haemophilia", "powersap", "scabies", "dysentery", "pox", "vomiting", "rigormortis", "taintsick"},
+#wafer = {"paralysis", "haemophilia", "powersap", "scabies", "dysentery", "pox", "vomiting", "rigormortis", "taintsick", "asthma","clotleftshoulder","clotrightshoulder","clotlefthip","clotrighthip","unknownwafer"},
 #}) do
 #local checkany_string = ""
 #local temp = {}
@@ -3497,8 +4166,25 @@ function valid.wafer_cured_$(aff)()
   end
 end
 
+
+function valid.instant_cure_paralysis()
+  local result = checkany(dict.paralysis.wafer, $(checkany_string))
+  if not result then return end
+
+  herb_cure = true
+  if result.name == "paralysis_wafer" then
+    lifevision.add(actions.paralysis_wafer.p, "instantcure")
+  else
+    killaction(dict[result.action_name].wafer)
+    checkaction(dict.paralysis.wafer, true)
+    lifevision.add(dict.paralysis.wafer)
+  end
+end
+
 #end
 #end
+
+
 
 -- allheale sips
 #for _, allheale in pairs({
@@ -3549,8 +4235,37 @@ end
 #end
 #end
 
+-- normal ice
+#for _, ice in pairs({
+#ice = {"damagedskull","damagedthroat","collapsedlungs","crushedchest","damagedorgans","internalbleeding","damagedleftarm","mutilatedleftarm","damagedrightarm","mutilatedrightarm","damagedleftleg","mutilatedleftleg","damagedrightleg","mutilatedrightleg"}}) do
+#local checkany_string = ""
+#local temp = {}
+
+#for _, aff in pairs(ice) do
+#temp[#temp+1] = encodeice(aff)
+#end
+#checkany_string = table.concat(temp, ", ")
+
+#for _, aff in pairs(ice) do
+function valid.ice_cured_$(aff)()
+  local result = checkany(dict.$(aff).ice, $(checkany_string))
+  if not result then return end
+
+  apply_ice = true
+  if result.name == "$(aff)_ice" then
+    lifevision.add(actions.$(aff)_ice.p)
+  else
+    killaction(dict[result.action_name].ice)
+    checkaction(dict.$(aff).ice, true)
+    lifevision.add(dict.$(aff).ice)
+  end
+end
+
+#end
+#end
+
 -- normal waitingfors
-#for _, aff in ipairs({"collapsedlungs", "disembowel", "crushedchest", "rupturedstomach", "collapsedleftnerve", "collapsedrightnerve", "severedspine", "concussion", "damagedhead", "shatteredjaw", "chestpain", "burstorgans"}) do
+#for _, aff in ipairs({"collapsedlungs", "disembowel", "crushedchest", "rupturedstomach", "collapsedleftnerve", "collapsedrightnerve", "severedspine", "concussion", "damagedhead", "shatteredjaw", "chestpain", "burstorgans", "damagedskull","damagedthroat","damagedorgans","internalbleeding","damagedleftarm","damagedrightarm","damagedleftleg","damagedrightleg","mutilatedleftarm","mutilatedrightarm","mutilatedleftleg","mutilatedrightleg"}) do
 function valid.cured$(aff)()
   checkaction(dict.curing$(aff).waitingfor)
   if actions.curing$(aff)_waitingfor then
@@ -3586,7 +4301,7 @@ end
 -- special defences
 
 function defs.getting_trueblind()
-  local r = checkany(dict.trueblind.herb, dict.blind.herb)
+  local r = checkany(dict.trueblind.herb, dict.blind.herb, dict.trueblind.wafer, dict.blind.wafer)
 
   if not r then return end
 
@@ -3595,7 +4310,7 @@ function defs.getting_trueblind()
 end
 
 function valid.ate_afterimage()
-  local r = checkany(dict.trueblind.herb, dict.blind.herb)
+  local r = checkany(dict.trueblind.herb, dict.blind.herb, dict.trueblind.wafer, dict.blind.wafer)
 
   if not r then return end
 
@@ -3612,14 +4327,49 @@ function valid.herb_failed_bedevil()
   lifevision.add(actions[r.name].p, "failed")
 end
 
+function valid.bedevil_steam()
+  mm.valid.simplerecklessness()
+  mm.knownaff = true
+end
+
+function valid.bedevil_lucidity()
+  mm.valid.simplepacifism()
+  mm.knownaff = true
+end
+
 function valid.herb_failed_jitterbug()
   local eating = findbybal("herb")
-  if not eating then return end
+  local wafer_ate = findbybal("wafer")
+
+  if not wafer_ate and not eating then return end
 
   herb_cure = true
-  sk.lostbal_herb()
+  if eating then
+    sk.lostbal_herb()
+    killaction(dict[eating.action_name].herb)
+  elseif wafer_ate then
+    sk.lostbal_wafer()
+    killaction(dict[wafer_ate.action_name].wafer)
+  end
 
-  killaction(dict[eating.action_name].herb)
+end
+
+function valid.steam_failed_jitterbug()
+  local smoking = findbybal("steam")
+
+  if not smoking then return end
+  smoke_cure = true
+  sk.lostbal_steam()
+  killaction(dict[smoking.action_name].steam)
+end
+
+function valid.lucidity_failed_jitterbug()
+  local sipping = findbybal("lucidity")
+
+  if not sipping then return end
+  sip_cure = true
+  sk.lostbal_lucidity()
+  killaction(dict[smoking.action_name].lucidity)
 end
 
 function valid.herb_failed_aurawarp()
@@ -3632,17 +4382,19 @@ function valid.herb_failed_aurawarp()
 end
 
 function defs.alreadygot_trueblind()
-  local r = checkany(dict.trueblind.herb, dict.blind.herb)
+  local r = checkany(dict.trueblind.herb, dict.blind.herb, dict.trueblind.wafer, dict.blind.wafer)
 
   if not r then return end
 
   herb_cure = true
   if r.action_name == "trueblind_herb" then
     lifevision.add(actions.trueblind_herb.p, "alreadygot")
+  elseif r.action_name == "trueblind_wafer" then
+    lifevision.add(actions.trueblind_wafer.p, "alreadygot")
   else
     killaction(dict[r.action_name].herb)
-    checkaction (dict.trueblind.herb, true)
-    lifevision.add(actions.trueblind_herb.p, "alreadygot")
+    checkaction (dict.trueblind.wafer, true)
+    lifevision.add(actions.trueblind_wafer.p, "alreadygot")
   end
 end
 
@@ -3686,7 +4438,7 @@ function valid.sour_sparkle()
 end
 
 function defs.curedblind()
-  local result = checkany(dict.trueblind.herb, dict.blind.herb)
+  local result = checkany(dict.trueblind.herb, dict.blind.herb, dict.trueblind.wafer, dict.blind.wafer)
   if not result then return end
 
 
@@ -3695,6 +4447,10 @@ function defs.curedblind()
     lifevision.add(actions.trueblind_herb.p, "curedblind")
   elseif actions.blind_herb then
     lifevision.add(actions.blind_herb.p)
+  elseif actions.trueblind_wafer then
+    lifevision.add(actions.trueblind_wafer.p, "curedblind")
+  elseif actions.blind_wafer then
+    lifevision.add(actions.blind_wafer.p)
   end
 end
 
@@ -3706,43 +4462,43 @@ function defs.got_trueblind()
 end
 
 function defs.got_truedeaf()
-  local result = checkany (dict.truedeaf.herb, dict.attraction.herb, dict.deaf.herb)
+  local result = checkany (dict.truedeaf.steam, dict.attraction.steam, dict.deaf.steam)
 
   if not result and conf.aillusion then
     return
   elseif not result and not conf.aillusion then
-    checkaction (dict.truedeaf.herb, true)
-    lifevision.add(actions.truedeaf_herb.p)
+    checkaction (dict.truedeaf.steam, true)
+    lifevision.add(actions.truedeaf_steam.p)
     return
   end
 
   herb_cure = true
   if result.action_name == "truedeaf" then
-    lifevision.add(actions.truedeaf_herb.p)
+    lifevision.add(actions.truedeaf_steam.p)
 
     if affs.attraction then
-      checkaction (dict.attraction.herb, true)
-      lifevision.add(actions.attraction_herb.p)
+      checkaction (dict.attraction.steam, true)
+      lifevision.add(actions.attraction_steam.p)
     end
   else
-    killaction(dict[result.action_name].herb)
-    checkaction (dict.truedeaf.herb, true)
-    checkaction (dict.attraction.herb, true)
-    lifevision.add(actions.truedeaf_herb.p)
-    lifevision.add(actions.attraction_herb.p)
+    killaction(dict[result.action_name].steam)
+    checkaction (dict.truedeaf.steam, true)
+    checkaction (dict.attraction.steam, true)
+    lifevision.add(actions.truedeaf_steam.p)
+    lifevision.add(actions.attraction_steam.p)
   end
 end
 
 function defs.cureddeaf()
-  local result = checkany (dict.truedeaf.herb, dict.deaf.herb)
+  local result = checkany (dict.truedeaf.steam, dict.deaf.steam)
   if not result then return end
 
 
   herb_cure = true
-  if actions.truedeaf_herb then
-    lifevision.add(actions.truedeaf_herb.p, "cureddeaf")
-  elseif actions.deaf_herb then
-    lifevision.add(actions.deaf_herb.p)
+  if actions.truedeaf_steam then
+    lifevision.add(actions.truedeaf_steam.p, "cureddeaf")
+  elseif actions.deaf_steam then
+    lifevision.add(actions.deaf_steam.p)
   end
 end
 
@@ -3802,7 +4558,7 @@ end
 
 
 local generic_cures_data = {
-  "clumsiness", "paranoia", "gluttony", "vertigo", "agoraphobia", "vestiphobia", "dizziness", "claustrophobia", "vapors", "recklessness", "epilepsy", "peace", "dementia", "addiction", "stupidity", "jinx", "healthleech", "sensitivity", "succumb", "arteryleftleg", "arteryleftarm", "arteryrightleg", "arteryrightarm", "slicedforehead", "opengut", "slicedleftthigh", "slicedrightthigh", "missingleftear", "missingrightear", "puncturedchest", "relapsing", "slickness", "laceratedleftarm", "laceratedrightarm", "laceratedrightleg", "laceratedleftleg", "laceratedunknown", "inlove", "achromaticaura", "slicedtongue", "clotleftshoulder", "clotrightshoulder", "clotrighthip", "clotlefthip", "gashedcheek", "weakness", "hallucinating", "rigormortis", "scrambledbrain", "openchest", "pacifism", "void", "confusion", "egovice", "manabarbs", "powerspikes", "achromaticaura", "slicedleftbicep", "slicedrightbicep", "bleeding", "puncturedaura",  "brokennose", "crushedleftfoot", "crushedrightfoot", "snappedrib", "fracturedleftarm", "fracturedrightarm", "crotamine", "healthleech", "powersap", "vomiting", "haemophilia", "weakness", "worms", "ablaze", "vomitblood", "dysentery", "scalped", "disloyalty", "shivering", "frozen", "dysentery", "furrowedbrow", "shyness", "confusion", "lovepotion", "sensitivity", "dizziness", "brokenjaw", "slitthroat", "pox", "scabies", "asthma", "blacklung", "puncturedlung", "crippledrightarm", "crippledleftarm", "crippledrightleg", "crippledleftleg", "fracturedskull", "sunallergy", "twistedleftleg", "twistedrightleg", "twistedleftarm", "twistedrightarm", "brokenrightwrist", "brokenleftwrist", "trembling", "shortbreath", "firstdegreeburn", "masochism", "impatience", "anorexia", "crushedwindpipe", "piercedleftleg", "piercedrightleg", "piercedleftarm", "piercedrightarm", "hemiplegyleft", "hemiplegyright", "hemiplegylower", "severedphrenic", "loneliness", "shyness", "cloudcoils", "loneliness", "masochism", "pacifism", "paranoia", "recklessness", "shyness", "stupidity", "vertigo", "void", "weakness", "addiction", "agoraphobia", "anorexia", "claustrophobia", "confusion", "dizziness", "epilepsy", "vestiphobia", "hallucinating", "treebane", "illuminated", "mud", "sap", "slickness", "slightinsanity", "moderateinsanity", "majorinsanity", "massiveinsanity", "impatience", "healhealth", "hypersomnia", "brokenchest", "daydreaming", "narcolepsy", "insomnia", "fear", "minortimewarp", "moderatetimewarp", "majortimewarp", "massivetimewarp", "oracle", "collapsedlungs", "hypochondria", "severedspine", "paralysis", "healego", "healmana", "avengingangel", "omniphobia", "aurawarp"
+  "clumsiness", "paranoia", "gluttony", "vertigo", "agoraphobia", "vestiphobia", "dizziness", "claustrophobia", "vapors", "recklessness", "epilepsy", "peace", "dementia", "addiction", "stupidity", "jinx", "healthleech", "sensitivity", "succumb", "arteryleftleg", "arteryleftarm", "arteryrightleg", "arteryrightarm", "slicedforehead", "opengut", "slicedleftthigh", "slicedrightthigh", "missingleftear", "missingrightear", "puncturedchest", "relapsing", "slickness", "laceratedleftarm", "laceratedrightarm", "laceratedrightleg", "laceratedleftleg", "laceratedunknown", "inlove", "achromaticaura", "slicedtongue", "clotleftshoulder", "clotrightshoulder", "clotrighthip", "clotlefthip", "gashedcheek", "weakness", "hallucinating", "rigormortis", "scrambledbrain", "openchest", "pacifism", "void", "confusion", "egovice", "manabarbs", "powerspikes", "achromaticaura", "slicedleftbicep", "slicedrightbicep", "bleeding", "puncturedaura",  "brokennose", "crushedleftfoot", "crushedrightfoot", "snappedrib", "fracturedleftarm", "fracturedrightarm", "crotamine", "healthleech", "powersap", "vomiting", "haemophilia", "weakness", "worms", "ablaze", "vomitblood", "dysentery", "scalped", "disloyalty", "shivering", "frozen", "dysentery", "furrowedbrow", "shyness", "confusion", "lovepotion", "sensitivity", "dizziness", "brokenjaw", "slitthroat", "pox", "scabies", "asthma", "blacklung", "puncturedlung", "crippledrightarm", "crippledleftarm", "crippledrightleg", "crippledleftleg", "fracturedskull", "sunallergy", "twistedleftleg", "twistedrightleg", "twistedleftarm", "twistedrightarm", "brokenrightwrist", "brokenleftwrist", "trembling", "shortbreath", "firstdegreeburn", "masochism", "impatience", "anorexia", "crushedwindpipe", "piercedleftleg", "piercedrightleg", "piercedleftarm", "piercedrightarm", "hemiplegyleft", "hemiplegyright", "hemiplegylower", "severedphrenic", "loneliness", "shyness", "cloudcoils", "loneliness", "masochism", "pacifism", "paranoia", "recklessness", "shyness", "stupidity", "vertigo", "void", "weakness", "addiction", "agoraphobia", "anorexia", "claustrophobia", "confusion", "dizziness", "epilepsy", "vestiphobia", "hallucinating", "treebane", "illuminated", "mud", "sap", "slickness", "slightinsanity", "moderateinsanity", "majorinsanity", "massiveinsanity", "impatience", "healhealth", "hypersomnia", "brokenchest", "daydreaming", "narcolepsy", "insomnia", "fear", "minortimewarp", "moderatetimewarp", "majortimewarp", "massivetimewarp", "oracle", "collapsedlungs", "hypochondria", "severedspine", "paralysis", "healego", "healmana", "avengingangel", "omniphobia", "aurawarp", "aeon", "completelyaurawarped","massivelyaurawarped","aurawarped","moderatelyaurawarped","slightlyaurawarped"
 }
 
 for i = 1, #generic_cures_data do
@@ -4548,3 +5304,39 @@ function valid.flare_negated()
     killaction(dict.transfixed.aff)
   end
 end
+
+function valid.lostwaferbalance()
+  checkaction(dict.stolebalance.happened, true)
+  lifevision.add(actions.stolebalance_happened.p, nil, "wafer")
+end
+
+function valid.notarget()
+  if actions.checkparalysis_misc then
+    lifevision.add(actions.checkparalysis_misc.p, "onclear")
+  end
+
+  if actions.healhealth_sip and conf.medicinebag and me.activeskills.stag then
+    config.set("medicinebag",false,true)
+  end
+end
+
+function valid.knownaff()
+  knownaff = true
+end
+
+function valid.removeknownaff()
+  knownaff = nil
+end
+
+function valid.have_artifact(arty)
+  mm.me.artifacts[arty] = true
+end
+
+function valid.healingflay()
+  if table.size(mm.affl)>0 then
+    valid.simpleunknownany()
+  end
+end
+
+
+
